@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 from functools import lru_cache
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import unquote, urlsplit
+from urllib.parse import parse_qs, unquote, urlsplit
 
 
 ROOT_DIR = Path(__file__).resolve().parent
@@ -16,7 +17,9 @@ DEFAULT_EXERCISES_JSON = FRONTEND_DIR / "exercises.json"
 if str(BACKEND_DIR) not in sys.path:
     sys.path.insert(0, str(BACKEND_DIR))
 
-from backend.plainexercise_exercise_links import run as build_exercise_index  # noqa: E402
+from backend.sync_exercises import collect_exercise_records, run as build_exercise_index  # noqa: E402
+from backend.db import delete_rows, insert_rows, select_rows, update_rows, upsert_rows  # noqa: E402
+from backend.schema import EXERCISES_SQL  # noqa: E402
 
 
 @lru_cache(maxsize=1)
@@ -68,12 +71,125 @@ class FrontendHandler(SimpleHTTPRequestHandler):
     def log_message(self, format: str, *args) -> None:
         return
 
+    def _api_parts(self) -> list[str] | None:
+        parts = urlsplit(self.path).path.strip("/").split("/")
+        if len(parts) in {2, 3} and parts[0] == "api":
+            return parts[1:]
+        return None
+
+    def _read_json(self) -> object:
+        length = int(self.headers.get("Content-Length", "0"))
+        if not length:
+            return {}
+        return json.loads(self.rfile.read(length).decode("utf-8"))
+
+    def _send_json(self, status: int, payload: object) -> None:
+        body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+        self.send_response(status)
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+    def _send_text(self, status: int, text: str) -> None:
+        body = text.encode("utf-8")
+        self.send_response(status)
+        self.send_header("Content-Type", "text/plain; charset=utf-8")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+    def _filters(self, row_id: str | None = None) -> dict[str, object]:
+        params = parse_qs(urlsplit(self.path).query)
+        for key in ("select", "limit", "order", "on_conflict"):
+            params.pop(key, None)
+        filters: dict[str, object] = {key: values[-1] for key, values in params.items()}
+        if row_id is not None:
+            filters["id"] = row_id
+        return filters
+
+    def _handle_api(self, method: str, parts: list[str]) -> None:
+        table = parts[0]
+        row_id = unquote(parts[1]) if len(parts) == 2 else None
+        params = parse_qs(urlsplit(self.path).query)
+
+        try:
+            if parts == ["exercises", "schema"] and method == "GET":
+                self._send_text(200, EXERCISES_SQL)
+                return
+            if parts == ["exercises", "sync"] and method == "POST":
+                records = collect_exercise_records()
+                for start in range(0, len(records), 100):
+                    upsert_rows("exercises", records[start : start + 100], on_conflict="url")
+                self._send_json(200, {"data": {"upserted": len(records)}})
+                return
+
+            if method == "GET":
+                data = select_rows(
+                    table,
+                    self._filters(row_id),
+                    params.get("select", ["*"])[0],
+                    int(params["limit"][0]) if "limit" in params else None,
+                    params.get("order", [None])[0],
+                )
+            elif method == "POST" and row_id is None:
+                data = insert_rows(table, self._read_json())
+            elif method == "PUT" and row_id is None:
+                data = upsert_rows(table, self._read_json(), params.get("on_conflict", [None])[0])
+            elif method == "PATCH":
+                data = update_rows(table, self._filters(row_id), self._read_json())
+            elif method == "DELETE":
+                data = delete_rows(table, self._filters(row_id))
+            else:
+                self._send_json(405, {"error": "Method not allowed"})
+                return
+            self._send_json(200, {"data": data})
+        except Exception as exc:
+            self._send_json(400, {"error": str(exc)})
+
+    def do_GET(self) -> None:
+        parts = self._api_parts()
+        if parts:
+            self._handle_api("GET", parts)
+            return
+        super().do_GET()
+
+    def do_POST(self) -> None:
+        parts = self._api_parts()
+        if parts:
+            self._handle_api("POST", parts)
+            return
+        self._send_json(404, {"error": "Not found"})
+
+    def do_PUT(self) -> None:
+        parts = self._api_parts()
+        if parts:
+            self._handle_api("PUT", parts)
+            return
+        self._send_json(404, {"error": "Not found"})
+
+    def do_PATCH(self) -> None:
+        parts = self._api_parts()
+        if parts:
+            self._handle_api("PATCH", parts)
+            return
+        self._send_json(404, {"error": "Not found"})
+
+    def do_DELETE(self) -> None:
+        parts = self._api_parts()
+        if parts:
+            self._handle_api("DELETE", parts)
+            return
+        self._send_json(404, {"error": "Not found"})
+
 
 def run_server(host: str = "127.0.0.1", port: int = 8000) -> None:
     FRONTEND_DIR.mkdir(parents=True, exist_ok=True)
     server = ThreadingHTTPServer((host, port), FrontendHandler)
     print(f"Serving {FRONTEND_DIR} at http://{host}:{port}")
     print("Routes: / -> frontend/index.html, /<page> -> frontend/<page>.html")
+    print("API: /api/<table> and /api/<table>/<id>")
+    print("Exercise sync: GET /api/exercises/schema, POST /api/exercises/sync")
     try:
         server.serve_forever()
     except KeyboardInterrupt:

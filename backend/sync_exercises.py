@@ -1,6 +1,6 @@
 """Collect exercise links and profile data from the PlainExercise pages.
 
-The script reuses the fetch helper from plainexercise.py, walks the listing
+The script reuses the fetch helper from fetch.py, walks the listing
 pages until the site returns the no-results sentinel, then fetches each
 exercise page and extracts the profile table into normalized fields.
 """
@@ -9,11 +9,14 @@ from __future__ import annotations
 
 import json
 import csv
+import os
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from html.parser import HTMLParser
 import sys
 from pathlib import Path
 from urllib.parse import urljoin
+from urllib.request import Request, urlopen
 
 from tqdm import tqdm
 
@@ -22,12 +25,13 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
 
-from plainexercise import get_page_content
+from fetch import get_page_content
 
 
 BASE_URL = "https://plainexercise.com"
 LISTING_URL_TEMPLATE = "https://plainexercise.com/exercises/?page={page}/"
 NO_RESULTS_SENTINEL = "No exercises match the current filters."
+DEFAULT_API_BASE_URL = os.environ.get("GYM_TRACKER_API_URL", "http://127.0.0.1:8000/api").rstrip("/")
 
 
 @dataclass
@@ -269,8 +273,37 @@ def run(output_path: str | Path | None = None) -> str:
     return output
 
 
+def collect_exercise_records() -> list[dict[str, object]]:
+    items = collect_exercise_details()
+    records = []
+    for exercise in items:
+        profile_data = {key: value for key, value in exercise.items() if key not in {"name", "url"}}
+        records.append(
+            {
+                "name": exercise["name"],
+                "url": exercise["url"],
+                "profile_data": profile_data,
+                "scraped_at": datetime.now(UTC).isoformat(),
+            }
+        )
+    return records
+
+
+def sync_exercises() -> int:
+    records = collect_exercise_records()
+    endpoint = f"{DEFAULT_API_BASE_URL}/exercises?on_conflict=url"
+    for start in range(0, len(records), 100):
+        body = json.dumps(records[start : start + 100]).encode("utf-8")
+        request = Request(endpoint, data=body, headers={"Content-Type": "application/json"}, method="PUT")
+        with urlopen(request) as response:
+            response.read()
+
+    return len(records)
+
+
 def main() -> None:
-    print(run("all_exercises.csv"))
+    count = sync_exercises()
+    print(f"Upserted {count} exercises into Supabase.")
 
 
 if __name__ == "__main__":
