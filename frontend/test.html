@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Peak Checks</title>
+  <style>
+    :root { color-scheme: dark; font-family: "SFMono-Regular", Consolas, monospace; background: #0d1117; color: #c9d1d9; }
+    * { box-sizing: border-box; }
+    body { min-height: 100vh; margin: 0; display: grid; place-items: center; padding: 20px; background: radial-gradient(circle at top, #161b22, #0d1117 58%); }
+    .window { width: min(800px, 100%); overflow: hidden; border: 1px solid #30363d; border-radius: 10px; background: #010409; box-shadow: 0 24px 70px #0009; }
+    .titlebar { display: flex; align-items: center; gap: 8px; height: 42px; padding: 0 14px; border-bottom: 1px solid #30363d; background: #161b22; }
+    .dot { width: 11px; height: 11px; border-radius: 50%; }
+    .red { background: #ff5f56; } .yellow { background: #ffbd2e; } .green { background: #27c93f; }
+    .title { margin-left: 8px; color: #8b949e; font-size: 12px; }
+    .terminal { padding: 22px; }
+    .command { margin: 0 0 18px; color: #f0f6fc; }
+    .prompt { color: #3fb950; }
+    ul { margin: 0; padding: 0; list-style: none; }
+    li { display: grid; grid-template-columns: minmax(160px, 220px) 1fr; gap: 18px; padding: 12px 0; border-bottom: 1px solid #21262d; }
+    li:last-child { border: 0; }
+    a { color: #58a6ff; text-decoration: none; overflow-wrap: anywhere; }
+    a:hover { text-decoration: underline; }
+    span { color: #8b949e; font-size: 12px; line-height: 1.5; }
+    @media (max-width: 560px) { li { grid-template-columns: 1fr; gap: 5px; } }
+  </style>
+</head>
+<body>
+  <main class="window">
+    <div class="titlebar">
+      <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+      <span class="title">peak — checks</span>
+    </div>
+    <section class="terminal">
+      <p class="command"><span class="prompt">peak $</span> ls checks/</p>
+      <ul>
+        <li><a href="/exercises">/exercises</a><span>View every exercise table column.</span></li>
+        <li><a href="/search-page">/search-page</a><span>Interactive fuzzy-search console.</span></li>
+        <li><a href="/food-search-page">/food-search-page</a><span>Supabase food-name index plus exact API details.</span></li>
+        <li><a href="/food-code-lookup">/food-code-lookup</a><span>Exact-code Canadian-style nutrition label test.</span></li>
+        <li><a href="/auth-test">/auth-test</a><span>Supabase signup, login, session, and passkey console.</span></li>
+        <li><a href="/ai-chat-test">/ai-chat-test</a><span>Authenticated structured AI chat with saved sessions and enriched result cards.</span></li>
+        <li><a href="/api/ai/schema">/api/ai/schema</a><span>Create the user-owned AI session and message tables.</span></li>
+        <li><a href="/refresh-food">/refresh-food</a><span>Refresh the lightweight code/name food index.</span></li>
+        <li><a href="/refresh">/refresh</a><span>Run and monitor the exercise refresh.</span></li>
+        <li><a href="/api/exercises/table">/api/exercises/table</a><span>Inspect exercise rows as JSON.</span></li>
+        <li><a href="/api/exercises/schema">/api/exercises/schema</a><span>Inspect the current table creation SQL.</span></li>
+        <li><a href="/api/supabase/schema">/api/supabase/schema</a><span>Complete additive Supabase SQL for manual execution.</span></li>
+        <li><a href="/api/foods/schema">/api/foods/schema</a><span>Standalone public.foods code/name schema.</span></li>
+        <li><a href="/api/metrics/schema">/api/metrics/schema</a><span>Create the body-metric reference table.</span></li>
+        <li><a href="/api/exercise-metrics/schema">/api/exercise-metrics/schema</a><span>Create the equipment tracking capability matrix.</span></li>
+        <li><a href="/api/search?table=body_metrics&amp;field=name&amp;q=weight">/api/search?table=body_metrics</a><span>Test metric-name fuzzy search after import.</span></li>
+        <li><a href="/api/schema">/api/schema</a><span>Inspect the combined application schema.</span></li>
+        <li><a href="/api/search?table=exercises&amp;field=name&amp;q=press">/api/search?...q=press</a><span>Inspect the five-name search response.</span></li>
+        <li><a href="/api/search?table=exercises&amp;field=name&amp;q=press&amp;details=true">/api/search?...details=true</a><span>Inspect the single expanded top row.</span></li>
+      </ul>
+    </section>
+  </main>
+</body>
+</html>

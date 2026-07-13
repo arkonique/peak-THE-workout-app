@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#fbfaf7">
+  <title>Welcome to Peak</title>
+  <link rel="icon" href="/app/assets/logo.png" type="image/png">
+  <link rel="stylesheet" href="/app/assets/onboarding.css">
+</head>
+<body>
+  <header class="onboarding-header">
+    <a class="brand" href="/app/onboarding" aria-label="Peak onboarding">
+      <img src="/app/assets/logo.png" alt="" width="42" height="42">
+      <span>Peak</span>
+    </a>
+    <div class="progress-copy"><span id="step-label">Introduction</span><strong id="step-count">1 of 8</strong></div>
+  </header>
+  <div class="progress-track" aria-hidden="true"><i id="progress-bar"></i></div>
+
+  <main class="onboarding" id="onboarding" aria-live="polite">
+    <section class="step is-active" data-step="0" data-label="Meet Pace">
+      <div class="step-copy step-copy--wide">
+        <p class="eyebrow">Your guide</p>
+        <h1>First, choose your Pace.</h1>
+        <p class="lead">Pace is Peak's mascot and your guide through workouts, food, measurements, friends, leagues, and AI planning. Choose the version you want to see around the app.</p>
+        <div class="pace-choices" role="radiogroup" aria-label="Choose a Pace avatar">
+          <button class="pace-choice" type="button" role="radio" aria-checked="false" data-gender="female">
+            <span class="pace-choice__image"><img src="/app/pace/pace_female_hi.png" alt="Female Pace waving hello"></span>
+            <span><strong>Choose this Pace</strong><small>Female avatar</small></span><i aria-hidden="true"></i>
+          </button>
+          <button class="pace-choice" type="button" role="radio" aria-checked="false" data-gender="male">
+            <span class="pace-choice__image"><img src="/app/pace/pace_male_hi.png" alt="Male Pace waving hello"></span>
+            <span><strong>Choose this Pace</strong><small>Male avatar</small></span><i aria-hidden="true"></i>
+          </button>
+        </div>
+        <p class="field-error" id="pace-error" role="alert"></p>
+      </div>
+    </section>
+
+    <section class="step" data-step="1" data-label="Your profile" hidden>
+      <div class="mascot-stage"><img data-pace-pose="standing" alt="Pace standing beside your profile setup"></div>
+      <div class="step-copy">
+        <p class="eyebrow">One record, built around you</p>
+        <h2>How should Pace address you?</h2>
+        <p class="lead">Your username is your unique account name. A display name and short bio make your profile easier for friends to recognize; both are optional.</p>
+        <div class="username-note"><span>Username</span><strong id="onboarding-username">Loading</strong></div>
+        <label class="field"><span>Display name <small>Optional</small></span><input name="display_name" maxlength="80" autocomplete="name" placeholder="What should Pace call you?"></label>
+        <label class="field"><span>Short bio <small>Optional</small></span><textarea name="bio" maxlength="500" rows="3" placeholder="Your training focus, priorities, or approach"></textarea></label>
+      </div>
+    </section>
+
+    <section class="step" data-step="2" data-label="Workouts" hidden>
+      <div class="mascot-stage"><img data-pace-pose="squat" alt="Pace demonstrating a squat"></div>
+      <div class="step-copy">
+        <p class="eyebrow">Workout tracking</p>
+        <h2>Log what actually happened.</h2>
+        <p class="lead">Peak connects exercises to the metrics that make sense for their equipment: sets, reps, weight, tempo, rest, duration, bands, volume, and estimated one-rep max.</p>
+        <fieldset class="choice-field"><legend>Workout experience <small>Helps Pace set an appropriate starting point</small></legend><div class="segmented">
+          <label><input type="radio" name="workout_experience" value="beginner"><span>Beginner</span></label>
+          <label><input type="radio" name="workout_experience" value="intermediate"><span>Intermediate</span></label>
+          <label><input type="radio" name="workout_experience" value="advanced"><span>Advanced</span></label>
+        </div></fieldset>
+        <label class="field"><span>Your goals <small>Separate multiple goals with commas</small></span><input name="goals" maxlength="1200" placeholder="Build strength, improve mobility, run 5 km"></label>
+      </div>
+    </section>
+
+    <section class="step" data-step="3" data-label="Food" hidden>
+      <div class="mascot-stage"><img data-pace-pose="chef" alt="Pace preparing food"></div>
+      <div class="step-copy">
+        <p class="eyebrow">Food and nutrition</p>
+        <h2>From a meal to a single nutrient.</h2>
+        <p class="lead">Log foods by meal and inspect nutrition at any level: one item, breakfast, meal three, or the whole day. Preferences help Pace suggest useful foods without assuming what you eat.</p>
+        <label class="field"><span>Favorite cuisines <small>Optional, comma-separated</small></span><input name="cuisine_preferences" maxlength="1200" placeholder="Indian, Japanese, Mediterranean"></label>
+        <label class="field"><span>Dietary preferences <small>Optional, comma-separated</small></span><input name="dietary_preferences" maxlength="1200" placeholder="Vegetarian, dairy-free, high-protein"></label>
+      </div>
+    </section>
+
+    <section class="step" data-step="4" data-label="Body metrics" hidden>
+      <div class="mascot-stage"><img data-pace-pose="graphs" alt="Pace reviewing body metric graphs"></div>
+      <div class="step-copy">
+        <p class="eyebrow">Body metrics</p>
+        <h2>Measure only what matters to you.</h2>
+        <p class="lead">Weight, circumference, body composition, heart rate, mobility, and other measurements live on the same timeline as training and nutrition. You choose what to record.</p>
+        <fieldset class="choice-field"><legend>Preferred units <small>Controls how measurements appear throughout Peak</small></legend><div class="unit-options">
+          <label><input type="radio" name="preferred_units" value="metric" checked><span><strong>Metric</strong><small>kg, cm, km</small></span></label>
+          <label><input type="radio" name="preferred_units" value="imperial"><span><strong>Imperial</strong><small>lb, in, mi</small></span></label>
+        </div></fieldset>
+      </div>
+    </section>
+
+    <section class="step" data-step="5" data-label="Friends" hidden>
+      <div class="mascot-stage mascot-stage--shared"><img src="/app/pace/pace_friends.png" alt="Pace with friends"></div>
+      <div class="step-copy">
+        <p class="eyebrow">Friends</p>
+        <h2>Progress is better with people.</h2>
+        <p class="lead">Find people by username, send a friend request, and stay connected without making your health record public by default.</p>
+        <div class="feature-grid"><article><span>01</span><strong>Send a request</strong><p>Connections only form after the other person accepts.</p></article><article><span>02</span><strong>Compare intentionally</strong><p>Being friends does not automatically expose every measurement.</p></article><article><span>03</span><strong>Train together</strong><p>Friends can join the same leagues and compare shared goals.</p></article></div>
+      </div>
+    </section>
+
+    <section class="step" data-step="6" data-label="Leagues" hidden>
+      <div class="mascot-stage"><img data-pace-pose="winner" alt="Pace celebrating a league result"></div>
+      <div class="step-copy">
+        <p class="eyebrow">Leagues</p>
+        <h2>Turn shared goals into a fair competition.</h2>
+        <p class="lead">Create a league for any duration, invite friends, and decide exactly which body, nutrition, or exercise metrics determine the ranking.</p>
+        <div class="feature-grid"><article><span>01</span><strong>Set the season</strong><p>Choose exact start and end dates for days, weeks, or months.</p></article><article><span>02</span><strong>Score your way</strong><p>Count every metric equally or assign custom weights.</p></article><article><span>03</span><strong>Make rules explicit</strong><p>Direction, targets, and missing-data handling are defined before ranking.</p></article></div>
+      </div>
+    </section>
+
+    <section class="step" data-step="7" data-label="AI with Pace" data-ai-step hidden>
+      <div class="mascot-stage"><img data-pace-pose="computer" alt="Pace helping at a computer"></div>
+      <div class="step-copy">
+        <p class="eyebrow">AI with Pace</p>
+        <h2>Ask for a plan. Get usable records.</h2>
+        <p class="lead">Pace can turn a conversation into structured exercise and food suggestions, then resolve them against Peak's exercise index and food data. AI chat history is temporary and currently deleted after one day.</p>
+        <div class="ai-example"><span>Pace</span><p class="typewriter"><span id="ai-prompt">Build a short leg session and a high-protein breakfast.</span><i aria-hidden="true"></i></p><div class="ai-example__rule"></div><small>Structured workout and nutrition cards</small></div>
+      </div>
+    </section>
+
+    <section class="step" data-step="8" data-label="Privacy" data-privacy-step hidden>
+      <div class="mascot-stage"><img data-pace-pose="stern" alt="Pace taking privacy seriously"></div>
+      <div class="step-copy">
+        <p class="eyebrow">Your data</p>
+        <h2>One last thing: privacy.</h2>
+        <p class="lead">That tracking prompt was only a demonstration. Peak will never track your activity across other companies' apps or websites.</p>
+        <div class="privacy-summary"><strong>You stay in control.</strong><p>Peak only uses the information you intentionally add to calculate trends and show your records back to you. Profile preferences personalize the app, while friend and league visibility is handled separately.</p></div>
+      </div>
+    </section>
+
+    <nav class="step-controls" aria-label="Onboarding controls">
+      <button class="back-button" id="back-button" type="button" disabled>Back</button>
+      <p id="onboarding-status" role="status"></p>
+      <button class="next-button" id="next-button" type="button"><span>Continue</span><i aria-hidden="true"></i></button>
+    </nav>
+  </main>
+
+  <div class="privacy-overlay" id="privacy-overlay" hidden>
+    <div class="ios-alert" role="alertdialog" aria-modal="true" aria-labelledby="privacy-title" aria-describedby="privacy-description">
+      <div class="privacy-request" id="privacy-request">
+        <div class="mini-app-icon"><img src="/app/assets/logo.png" alt=""></div>
+        <h2 id="privacy-title">Allow “Peak” to track your activity across other companies' apps and websites?</h2>
+        <p id="privacy-description">This would be used to personalize your experience.</p>
+        <div class="ios-actions"><button type="button" data-tracking-answer="deny">Ask App Not to Track</button><button type="button" data-tracking-answer="allow">Allow</button></div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="/app/assets/onboarding.js"></script>
+</body>
+</html>

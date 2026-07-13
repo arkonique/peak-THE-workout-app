@@ -1,0 +1,582 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Food Code Nutrition Label Test</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+      background: #0d1117;
+      color: #c9d1d9;
+    }
+    * { box-sizing: border-box; }
+    body {
+      min-height: 100vh;
+      margin: 0;
+      padding: 22px;
+      background: radial-gradient(circle at top, #161b22, #0d1117 58%);
+    }
+    .window {
+      width: min(1180px, 100%);
+      min-height: calc(100vh - 44px);
+      margin: auto;
+      overflow: hidden;
+      border: 1px solid #30363d;
+      border-radius: 10px;
+      background: #010409;
+      box-shadow: 0 24px 70px #0009;
+    }
+    .titlebar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      height: 42px;
+      padding: 0 14px;
+      border-bottom: 1px solid #30363d;
+      background: #161b22;
+    }
+    .dot { width: 11px; height: 11px; border-radius: 50%; }
+    .red { background: #ff5f56; }
+    .yellow { background: #ffbd2e; }
+    .green { background: #27c93f; }
+    .title { margin-left: 8px; color: #8b949e; font-size: 12px; }
+    .terminal { padding: 22px; }
+    .command { margin: 0 0 8px; color: #f0f6fc; }
+    .prompt { color: #3fb950; }
+    .notice { margin: 0 0 16px; color: #8b949e; font-size: 12px; line-height: 1.55; }
+    form { display: flex; gap: 10px; max-width: 720px; }
+    input {
+      flex: 1;
+      min-width: 0;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      padding: 11px 12px;
+      color: #f0f6fc;
+      background: #0d1117;
+      outline: none;
+      font: inherit;
+    }
+    input:focus { border-color: #3fb950; box-shadow: 0 0 0 2px #23863644; }
+    button {
+      border: 1px solid #238636;
+      border-radius: 6px;
+      padding: 10px 14px;
+      color: #fff;
+      background: #238636;
+      cursor: pointer;
+      font: inherit;
+    }
+    button:hover { background: #2ea043; }
+    button:disabled { cursor: wait; opacity: .65; }
+    .samples { display: flex; flex-wrap: wrap; gap: 8px; margin: 13px 0 0; }
+    .sample {
+      border-color: #30363d;
+      padding: 6px 9px;
+      color: #8b949e;
+      background: #161b22;
+      font-size: 11px;
+    }
+    .sample:hover { color: #f0f6fc; background: #21262d; }
+    #status { min-height: 20px; margin: 14px 0 0; color: #8b949e; font-size: 12px; }
+    #status.error { color: #f85149; }
+    .result {
+      display: grid;
+      grid-template-columns: minmax(320px, 470px) minmax(260px, 1fr);
+      align-items: start;
+      gap: 28px;
+      margin-top: 18px;
+    }
+    .result[hidden] { display: none; }
+    .label-column { min-width: 0; }
+    .product-heading { margin: 0 0 14px; color: #f0f6fc; font: 700 20px/1.25 system-ui, sans-serif; }
+    .product-meta { margin: -7px 0 15px; color: #8b949e; font: 12px/1.5 system-ui, sans-serif; }
+
+    /* Bilingual Canadian-style standard nutrition facts panel. */
+    .nutrition-label {
+      width: 100%;
+      padding: 8px 10px 10px;
+      border: 3px solid #111;
+      color: #050505;
+      background: #fff;
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 15px;
+      line-height: 1.02;
+    }
+    .nf-title { font-size: 34px; font-weight: 900; letter-spacing: -1.7px; line-height: .9; }
+    .nf-title-fr { margin-top: 2px; font-size: 25px; font-weight: 900; letter-spacing: -1px; }
+    .serving { padding: 5px 0 6px; font-weight: 700; line-height: 1.12; }
+    .rule-heavy { border-top: 9px solid #111; }
+    .rule-medium { border-top: 5px solid #111; }
+    .calories {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 4px 0 3px;
+      font-size: 24px;
+      font-weight: 900;
+    }
+    .calories strong { font-size: 35px; }
+    .dv-heading { padding: 4px 1px 3px; border-bottom: 1px solid #111; text-align: right; font-size: 11px; font-weight: 800; line-height: 1.05; }
+    .nutrient-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 8px;
+      padding: 3px 1px 2px;
+      border-bottom: 1px solid #777;
+      align-items: baseline;
+    }
+    .nutrient-row .name { min-width: 0; }
+    .nutrient-row.major .name { font-weight: 800; }
+    .nutrient-row.indent .name { padding-left: 16px; }
+    .nutrient-row .dv { min-width: 42px; text-align: right; font-weight: 800; }
+    .sat-trans { align-items: center; }
+    .sat-lines { display: grid; gap: 2px; padding-left: 16px; }
+    .extra-heading { padding: 5px 1px 3px; font-size: 12px; font-weight: 900; }
+    .footnote { padding-top: 5px; font-size: 10px; font-weight: 700; line-height: 1.15; }
+    .missing { font-weight: 400; color: #555; }
+    .ingredients-card {
+      margin-top: 14px;
+      padding: 11px 12px;
+      border: 2px solid #111;
+      color: #050505;
+      background: #fff;
+      font-family: Arial, Helvetica, sans-serif;
+      line-height: 1.35;
+    }
+    .ingredients-card h2 { margin: 0 0 6px; font-size: 19px; }
+    .ingredients-card p { margin: 5px 0 0; font-size: 13px; }
+    .ingredients-card strong { font-weight: 800; }
+    .debug-panel {
+      min-width: 0;
+      border: 1px solid #21262d;
+      border-radius: 7px;
+      background: #0d1117;
+    }
+    .debug-panel summary { padding: 12px 14px; color: #58a6ff; cursor: pointer; font-size: 12px; }
+    .debug-panel pre {
+      max-height: 680px;
+      margin: 0;
+      overflow: auto;
+      padding: 0 14px 14px;
+      color: #8b949e;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      font: 11px/1.5 "SFMono-Regular", Consolas, monospace;
+    }
+    .disclaimer { margin: 12px 0 0; color: #8b949e; font: 11px/1.45 system-ui, sans-serif; }
+    @media (max-width: 820px) {
+      body { padding: 8px; }
+      .window { min-height: calc(100vh - 16px); }
+      .terminal { padding: 15px; }
+      .result { grid-template-columns: 1fr; }
+      form { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <main class="window">
+    <div class="titlebar">
+      <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+      <span class="title">peak — exact food-code nutrition label</span>
+    </div>
+    <section class="terminal">
+      <p class="command"><span class="prompt">peak $</span> food-product --code</p>
+      <p class="notice">No request is made while typing. Enter an exact barcode and press Enter or LOOK UP.</p>
+      <form id="lookup-form" novalidate>
+        <input id="food-code" inputmode="numeric" autocomplete="off" spellcheck="false" aria-label="Food code" placeholder="e.g. 0028400718271" autofocus>
+        <button id="submit-button" type="submit">LOOK UP</button>
+      </form>
+      <div class="samples" aria-label="Example Open Food Facts product codes">
+        <button class="sample" type="button" data-code="5020580007034">5020580007034 · chicken breast fillets</button>
+        <button class="sample" type="button" data-code="5060108457583">5060108457583 · light lemonade</button>
+        <button class="sample" type="button" data-code="0028400718271">0028400718271 · nacho cheese popcorn</button>
+      </div>
+      <p id="status" role="status" aria-live="polite">idle</p>
+
+      <section class="result" id="result" hidden>
+        <div class="label-column">
+          <h1 class="product-heading" id="product-name"></h1>
+          <p class="product-meta" id="product-meta"></p>
+          <div class="nutrition-label" id="nutrition-label"></div>
+          <section class="ingredients-card" id="ingredients"></section>
+          <p class="disclaimer">Test display generated from community-contributed Open Food Facts data. Missing values remain blank; this is not a regulatory label.</p>
+        </div>
+        <details class="debug-panel">
+          <summary>Raw Open Food Facts response</summary>
+          <pre id="raw-product"></pre>
+        </details>
+      </section>
+    </section>
+  </main>
+
+  <script>
+    const form = document.querySelector("#lookup-form");
+    const codeInput = document.querySelector("#food-code");
+    const submitButton = document.querySelector("#submit-button");
+    const statusElement = document.querySelector("#status");
+    const resultElement = document.querySelector("#result");
+    const nameElement = document.querySelector("#product-name");
+    const metaElement = document.querySelector("#product-meta");
+    const labelElement = document.querySelector("#nutrition-label");
+    const ingredientsElement = document.querySelector("#ingredients");
+    const rawElement = document.querySelector("#raw-product");
+
+    const CORE_IDS = new Set([
+      "energy", "energy-kcal", "energy-kj", "fat", "saturated-fat", "trans-fat",
+      "carbohydrates", "fiber", "fibre", "sugars", "proteins", "protein",
+      "cholesterol", "sodium", "potassium", "calcium", "iron"
+    ]);
+
+    const DAILY_VALUES = {
+      fat: [75, "g"],
+      "saturated-fat-and-trans-fat": [20, "g"],
+      fiber: [28, "g"],
+      sugars: [100, "g"],
+      sodium: [2300, "mg"],
+      potassium: [3400, "mg"],
+      calcium: [1300, "mg"],
+      iron: [18, "mg"],
+      "vitamin-a": [900, "µg"],
+      "vitamin-c": [90, "mg"],
+      "vitamin-d": [20, "µg"],
+      "vitamin-e": [15, "mg"],
+      "vitamin-k": [120, "µg"],
+      "vitamin-b1": [1.2, "mg"],
+      "vitamin-b2": [1.3, "mg"],
+      "vitamin-b6": [1.7, "mg"],
+      "vitamin-b12": [2.4, "µg"],
+      folates: [400, "µg"],
+      folate: [400, "µg"],
+      choline: [550, "mg"],
+      biotin: [30, "µg"],
+      "pantothenic-acid": [5, "mg"],
+      phosphorus: [1250, "mg"],
+      iodine: [150, "µg"],
+      magnesium: [420, "mg"],
+      zinc: [11, "mg"],
+      selenium: [55, "µg"],
+      copper: [0.9, "mg"],
+      manganese: [2.3, "mg"],
+      chromium: [35, "µg"],
+      molybdenum: [45, "µg"],
+      chloride: [2300, "mg"]
+    };
+
+    const EXTRA_NAMES = {
+      "vitamin-a": "Vitamin A / Vitamine A",
+      "vitamin-c": "Vitamin C / Vitamine C",
+      "vitamin-d": "Vitamin D / Vitamine D",
+      "vitamin-e": "Vitamin E / Vitamine E",
+      "vitamin-k": "Vitamin K / Vitamine K",
+      "vitamin-b1": "Thiamine / Thiamine",
+      "vitamin-b2": "Riboflavin / Riboflavine",
+      "vitamin-b6": "Vitamin B6 / Vitamine B6",
+      "vitamin-b12": "Vitamin B12 / Vitamine B12",
+      folates: "Folate / Folate",
+      folate: "Folate / Folate",
+      choline: "Choline",
+      biotin: "Biotin / Biotine",
+      "pantothenic-acid": "Pantothenate / Pantothénate",
+      phosphorus: "Phosphorus / Phosphore",
+      iodine: "Iodide / Iode",
+      magnesium: "Magnesium / Magnésium",
+      zinc: "Zinc",
+      selenium: "Selenium / Sélénium",
+      copper: "Copper / Cuivre",
+      manganese: "Manganese / Manganèse",
+      chromium: "Chromium / Chrome",
+      molybdenum: "Molybdenum / Molybdène",
+      chloride: "Chloride / Chlorure"
+    };
+
+    function numeric(value) {
+      const parsed = typeof value === "number" ? value : Number.parseFloat(value);
+      return Number.isFinite(parsed) ? parsed : null;
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    function normalizeUnit(unit) {
+      const value = String(unit || "").trim().toLowerCase();
+      if (["μg", "ug", "mcg"].includes(value)) return "µg";
+      if (value === "kj") return "kJ";
+      return value;
+    }
+
+    function convertUnit(value, fromUnit, toUnit) {
+      if (value === null) return null;
+      const from = normalizeUnit(fromUnit);
+      const to = normalizeUnit(toUnit);
+      if (!from || !to || from === to) return value;
+      const grams = { kg: 1000, g: 1, mg: .001, "µg": .000001 };
+      if (grams[from] && grams[to]) return value * grams[from] / grams[to];
+      if (from === "kJ" && to === "kcal") return value / 4.184;
+      if (from === "kcal" && to === "kJ") return value * 4.184;
+      return null;
+    }
+
+    function numberText(value, calories = false) {
+      if (value === null) return "—";
+      if (calories || Math.abs(value) >= 100) return String(Math.round(value));
+      if (Math.abs(value) >= 10) return value.toFixed(1).replace(/\.0$/, "");
+      return value.toFixed(2).replace(/0+$/, "").replace(/\.$/, "");
+    }
+
+    function displayAmount(item, targetUnit) {
+      if (!item || item.value === null) return '<span class="missing">—</span>';
+      const desiredUnit = targetUnit || item.unit;
+      const converted = targetUnit ? convertUnit(item.value, item.unit, targetUnit) : item.value;
+      if (converted === null) return escapeHtml(`${numberText(item.value)} ${item.unit || ""}`.trim());
+      return escapeHtml(`${numberText(converted)} ${desiredUnit || ""}`.trim());
+    }
+
+    function dailyValue(item, dailyValueAmount, dailyValueUnit) {
+      if (!item || item.value === null) return null;
+      const converted = convertUnit(item.value, item.unit, dailyValueUnit);
+      return converted === null ? null : Math.round((converted / dailyValueAmount) * 100);
+    }
+
+    function humanize(value) {
+      return String(value)
+        .replace(/-/g, " ")
+        .replace(/\b\w/g, character => character.toUpperCase());
+    }
+
+    function buildNutrition(product) {
+      const nutriments = product.nutriments && typeof product.nutriments === "object"
+        ? product.nutriments
+        : {};
+      const servingQuantity = numeric(product.serving_quantity);
+      const hasServingValues = Object.entries(nutriments).some(
+        ([key, value]) => key.endsWith("_serving") && !key.includes("_prepared_") && numeric(value) !== null
+      );
+      const basis = hasServingValues ? "serving" : "100g";
+
+      function nutrient(ids, targetUnit = null) {
+        for (const id of ids) {
+          let value = numeric(nutriments[`${id}_${basis}`]);
+          let unit = normalizeUnit(nutriments[`${id}_unit`] || targetUnit);
+          if (value === null && basis === "serving" && servingQuantity !== null) {
+            const per100g = numeric(nutriments[`${id}_100g`]);
+            if (per100g !== null) value = per100g * servingQuantity / 100;
+          }
+          if (value === null && String(product.nutrition_data_per || "").toLowerCase() === basis) {
+            value = numeric(nutriments[id] ?? nutriments[`${id}_value`]);
+          }
+          if (value !== null) {
+            if (!unit) unit = targetUnit || "";
+            return { id, value, unit };
+          }
+        }
+        return null;
+      }
+
+      let calories = nutrient(["energy-kcal"], "kcal");
+      if (!calories) {
+        const kilojoules = nutrient(["energy-kj", "energy"], "kJ");
+        if (kilojoules) calories = { ...kilojoules, value: convertUnit(kilojoules.value, kilojoules.unit, "kcal"), unit: "kcal" };
+      }
+
+      const fat = nutrient(["fat"], "g");
+      const saturated = nutrient(["saturated-fat"], "g");
+      const trans = nutrient(["trans-fat"], "g");
+      const carbohydrates = nutrient(["carbohydrates"], "g");
+      const fibre = nutrient(["fiber", "fibre"], "g");
+      const sugars = nutrient(["sugars"], "g");
+      const protein = nutrient(["proteins", "protein"], "g");
+      const cholesterol = nutrient(["cholesterol"], "mg");
+      const sodium = nutrient(["sodium"], "mg");
+      const potassium = nutrient(["potassium"], "mg");
+      const calcium = nutrient(["calcium"], "mg");
+      const iron = nutrient(["iron"], "mg");
+
+      const satValue = saturated ? convertUnit(saturated.value, saturated.unit, "g") : null;
+      const transValue = trans ? convertUnit(trans.value, trans.unit, "g") : null;
+      const combinedFat = satValue === null && transValue === null
+        ? null
+        : { value: (satValue || 0) + (transValue || 0), unit: "g" };
+
+      function dvText(item, key) {
+        const definition = DAILY_VALUES[key];
+        if (!definition) return "";
+        const value = dailyValue(item, definition[0], definition[1]);
+        return value === null ? "—" : `${value}%`;
+      }
+
+      const servingText = basis === "serving"
+        ? (product.serving_size || (servingQuantity !== null ? `${numberText(servingQuantity)} g` : "1 serving"))
+        : "100 g";
+
+      const rows = [
+        `<div class="nutrient-row major"><span class="name">Fat / Lipides ${displayAmount(fat, "g")}</span><span class="dv">${dvText(fat, "fat")}</span></div>`,
+        `<div class="nutrient-row sat-trans"><span class="sat-lines"><span>Saturated / saturés ${displayAmount(saturated, "g")}</span><span>+ Trans / trans ${displayAmount(trans, "g")}</span></span><span class="dv">${dvText(combinedFat, "saturated-fat-and-trans-fat")}</span></div>`,
+        `<div class="nutrient-row major"><span class="name">Carbohydrate / Glucides ${displayAmount(carbohydrates, "g")}</span><span class="dv"></span></div>`,
+        `<div class="nutrient-row indent"><span class="name"><strong>Fibre / Fibres</strong> ${displayAmount(fibre, "g")}</span><span class="dv">${dvText(fibre, "fiber")}</span></div>`,
+        `<div class="nutrient-row indent"><span class="name"><strong>Sugars / Sucres</strong> ${displayAmount(sugars, "g")}</span><span class="dv">${dvText(sugars, "sugars")}</span></div>`,
+        `<div class="nutrient-row major"><span class="name">Protein / Protéines ${displayAmount(protein, "g")}</span><span class="dv"></span></div>`,
+        `<div class="nutrient-row major"><span class="name">Cholesterol / Cholestérol ${displayAmount(cholesterol, "mg")}</span><span class="dv"></span></div>`,
+        `<div class="nutrient-row major"><span class="name">Sodium ${displayAmount(sodium, "mg")}</span><span class="dv">${dvText(sodium, "sodium")}</span></div>`,
+        `<div class="rule-medium"></div>`,
+        `<div class="nutrient-row"><span class="name">Potassium ${displayAmount(potassium, "mg")}</span><span class="dv">${dvText(potassium, "potassium")}</span></div>`,
+        `<div class="nutrient-row"><span class="name">Calcium ${displayAmount(calcium, "mg")}</span><span class="dv">${dvText(calcium, "calcium")}</span></div>`,
+        `<div class="nutrient-row"><span class="name">Iron / Fer ${displayAmount(iron, "mg")}</span><span class="dv">${dvText(iron, "iron")}</span></div>`
+      ];
+
+      const additional = [];
+      const seen = new Set();
+      for (const key of Object.keys(nutriments)) {
+        const suffixMatch = key.match(/_(100g|serving)$/);
+        if (!suffixMatch || key.includes("_prepared_")) continue;
+        const id = key.slice(0, -suffixMatch[0].length);
+        if (!id || CORE_IDS.has(id) || seen.has(id)) continue;
+        const item = nutrient([id]);
+        if (!item || item.value === null) continue;
+        seen.add(id);
+        const dvDefinition = DAILY_VALUES[id];
+        const dv = dvDefinition ? dailyValue(item, dvDefinition[0], dvDefinition[1]) : null;
+        additional.push({
+          id,
+          label: escapeHtml(EXTRA_NAMES[id] || humanize(id)),
+          amount: displayAmount(item),
+          dv: dv === null ? "" : `${dv}%`
+        });
+      }
+      additional.sort((a, b) => a.label.localeCompare(b.label));
+
+      if (additional.length) {
+        rows.push('<div class="extra-heading rule-medium">Additional information / Renseignements supplémentaires</div>');
+        for (const item of additional) {
+          rows.push(`<div class="nutrient-row"><span class="name">${item.label} ${item.amount}</span><span class="dv">${item.dv}</span></div>`);
+        }
+      }
+
+      return `
+        <div class="nf-title">Nutrition Facts</div>
+        <div class="nf-title-fr">Valeur nutritive</div>
+        <div class="serving">Per ${escapeHtml(servingText)}<br>pour ${escapeHtml(servingText)}</div>
+        <div class="rule-heavy"></div>
+        <div class="calories"><span>Calories</span><strong>${numberText(calories?.value ?? null, true)}</strong></div>
+        <div class="rule-medium"></div>
+        <div class="dv-heading">% Daily Value* / % valeur quotidienne*</div>
+        ${rows.join("")}
+        <div class="rule-medium"></div>
+        <div class="footnote">* 5% or less is a little, 15% or more is a lot<br>* 5 % ou moins c’est peu, 15 % ou plus c’est beaucoup</div>
+      `;
+    }
+
+    function ingredientFallback(product) {
+      if (!Array.isArray(product.ingredients)) return "";
+      return product.ingredients
+        .map(item => item && (item.text || item.id))
+        .filter(Boolean)
+        .join(", ");
+    }
+
+    function renderIngredients(product) {
+      const fallback = ingredientFallback(product);
+      const generic = product.ingredients_text || fallback;
+      const english = product.ingredients_text_en || (product.lang === "en" ? generic : "");
+      const french = product.ingredients_text_fr || (product.lang === "fr" ? generic : "");
+      ingredientsElement.replaceChildren();
+
+      const heading = document.createElement("h2");
+      heading.textContent = "Ingredients / Ingrédients";
+      ingredientsElement.append(heading);
+
+      if (english) {
+        const paragraph = document.createElement("p");
+        const label = document.createElement("strong");
+        label.textContent = "Ingredients: ";
+        paragraph.append(label, document.createTextNode(english));
+        ingredientsElement.append(paragraph);
+      }
+      if (french) {
+        const paragraph = document.createElement("p");
+        const label = document.createElement("strong");
+        label.textContent = "Ingrédients : ";
+        paragraph.append(label, document.createTextNode(french));
+        ingredientsElement.append(paragraph);
+      }
+      if (!english && !french && generic) {
+        const paragraph = document.createElement("p");
+        paragraph.textContent = generic;
+        ingredientsElement.append(paragraph);
+      }
+      if (!english && !french && !generic) {
+        const paragraph = document.createElement("p");
+        paragraph.textContent = "Ingredient information is unavailable.";
+        ingredientsElement.append(paragraph);
+      }
+    }
+
+    function renderProduct(product, requestedCode) {
+      const name = product.product_name_en || product.product_name || product.generic_name_en || "Unnamed product";
+      const brand = product.brands || "Unknown brand";
+      const code = product.code || requestedCode;
+      nameElement.textContent = name;
+      metaElement.textContent = `${brand} · code ${code}${product.quantity ? ` · ${product.quantity}` : ""}`;
+      labelElement.innerHTML = buildNutrition(product);
+      renderIngredients(product);
+      rawElement.textContent = JSON.stringify(product, null, 2);
+      resultElement.hidden = false;
+    }
+
+    async function lookup(code) {
+      submitButton.disabled = true;
+      statusElement.className = "";
+      statusElement.textContent = `requesting Open Food Facts product ${code}…`;
+      resultElement.hidden = true;
+      try {
+        const response = await fetch(`/api/food-product?${new URLSearchParams({ code })}`, { cache: "no-store" });
+        const payload = await response.json();
+        if (!response.ok) {
+          const retry = response.status === 429 && payload.retry_after
+            ? ` Try again in ${payload.retry_after} seconds.`
+            : "";
+          throw new Error(`${payload.error || `Lookup returned ${response.status}.`}${retry}`);
+        }
+        if (!payload.data?.product) throw new Error("Open Food Facts returned no product for this code.");
+        renderProduct(payload.data.product, code);
+        statusElement.textContent = payload.data.cached ? "complete · server cache" : "complete · Open Food Facts";
+      } catch (error) {
+        statusElement.className = "error";
+        statusElement.textContent = `[error] ${error.message}`;
+      } finally {
+        submitButton.disabled = false;
+      }
+    }
+
+    form.addEventListener("submit", event => {
+      event.preventDefault();
+      const code = codeInput.value.replace(/\s+/g, "");
+      if (!/^\d{4,64}$/.test(code)) {
+        statusElement.className = "error";
+        statusElement.textContent = "[error] Enter a food code containing digits only.";
+        resultElement.hidden = true;
+        return;
+      }
+      codeInput.value = code;
+      lookup(code);
+    });
+
+    document.querySelectorAll(".sample").forEach(button => {
+      button.addEventListener("click", () => {
+        codeInput.value = button.dataset.code;
+        codeInput.focus();
+        statusElement.className = "";
+        statusElement.textContent = "code filled · press Enter to look it up";
+      });
+    });
+  </script>
+</body>
+</html>

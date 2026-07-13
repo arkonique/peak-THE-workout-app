@@ -1,0 +1,511 @@
+Project peak_the_workout_app {
+  database_type: 'PostgreSQL'
+  Note: 'Logical Supabase schema for user tracking, leagues, and the lightweight food code/name index. Full food products are resolved by code through an API.'
+}
+
+Enum meal_kind {
+  breakfast
+  lunch
+  dinner
+  additional
+}
+
+Enum muscle_role {
+  primary
+  secondary
+}
+
+Enum friendship_status {
+  pending
+  accepted
+  declined
+  blocked
+  removed
+}
+
+Enum league_status {
+  draft
+  active
+  completed
+  cancelled
+}
+
+Enum league_member_role {
+  owner
+  admin
+  member
+}
+
+Enum league_member_status {
+  invited
+  accepted
+  declined
+  removed
+}
+
+Enum league_scoring_mode {
+  equal
+  weighted
+}
+
+Enum league_metric_type {
+  body
+  nutrient
+  exercise
+}
+
+Enum metric_value_method {
+  sum
+  average
+  maximum
+  minimum
+  latest
+  change
+  percent_change
+}
+
+Enum metric_direction {
+  higher
+  lower
+  closest_to_target
+}
+
+Enum missing_data_policy {
+  disqualify
+  zero_score
+}
+
+Enum exercise_measure {
+  reps
+  weight
+  concentric_seconds
+  eccentric_seconds
+  isometric_seconds
+  duration_seconds
+  rest_after_seconds
+  sets
+  volume
+  one_rep_max
+}
+
+Table auth.users {
+  id uuid [pk, not null, note: 'Supabase Auth user identifier. This value is used internally and does not need to be displayed.']
+  email text [unique]
+  phone text [unique]
+  raw_app_meta_data jsonb [note: 'Supabase stores provider and provider-type information here.']
+  raw_user_meta_data jsonb [note: 'Signup metadata such as username or display name can appear here.']
+  created_at timestamptz
+  last_sign_in_at timestamptz
+
+  Note: 'Managed by Supabase Auth. Password hashes and auth internals are intentionally omitted from this application diagram.'
+}
+
+Table public.users {
+  id uuid [pk, not null, note: 'Matches auth.users.id exactly.']
+  username text [not null, unique]
+  display_name text [note: 'Optional public-facing name. Keep login and friend lookup tied to the unique username.']
+  profile_picture text [note: 'Public Supabase Storage URL for the user-selected or generated avatar.']
+  pace_gender text [note: 'Selected female or male Pace mascot variant used throughout the app.']
+  goals text[] [not null, default: `{}`]
+  workout_experience text [note: 'One of beginner, intermediate, or advanced; used to adapt guidance and defaults.']
+  cuisine_preferences text[] [not null, default: `{}`]
+  dietary_preferences text[] [not null, default: `{}`]
+  preferred_units text [not null, default: 'metric', note: 'Metric or imperial display preference.']
+  bio text
+  onboarding_completed boolean [not null, default: false, note: 'Internal routing flag set only after the onboarding flow is finished.']
+  created_at timestamptz [not null, default: `now()`]
+  updated_at timestamptz [not null, default: `now()`]
+
+  Note: 'Public application profile. Authentication credentials remain in auth.users.'
+}
+
+Table public.exercise_metrics {
+  equipment text [pk, not null, note: 'Canonical equipment value shared with exercises and workout exercise snapshots.']
+  reps boolean [not null, note: 'True when repetitions are applicable for this equipment.']
+  concentric_time boolean [not null]
+  eccentric_time boolean [not null]
+  isometric_time boolean [not null]
+  time boolean [not null, note: 'True when total exercise duration is applicable.']
+  set_rest_time boolean [not null]
+  exercise_rest_time boolean [not null]
+  sets boolean [not null]
+  weights boolean [not null]
+  band_color boolean [not null]
+  volume boolean [not null, note: 'True when volume can be calculated for this equipment.']
+  one_rep_max boolean [not null, note: 'True when a one-repetition maximum can be calculated or recorded.']
+  updated_at timestamptz [not null, default: `now()`]
+
+  Note: 'Capability matrix. These booleans determine which typed exercise-set inputs the UI displays and the backend accepts.'
+}
+
+Table public.exercises {
+  id bigint [pk, increment]
+  name text [not null]
+  url text [not null, unique]
+  force text
+  category text
+  mechanic text
+  equipment text [note: 'References the equipment capability configuration in exercise_metrics.']
+  difficulty text
+  primary_muscle text [note: 'Raw scraped value. exercise_muscle_groups is the normalized relationship.']
+  secondary_muscles integer [note: 'Raw scraped count, not a muscle-group foreign key.']
+  variations_available integer
+  scraped_at timestamptz [not null, default: `now()`]
+
+  Note: 'Exercise reference catalog. User workout records point here by exercise ID.'
+}
+
+Table public.exercise_muscle_groups {
+  exercise_id bigint [not null]
+  muscle_group_id integer [not null]
+  role muscle_role [not null]
+
+  indexes {
+    (exercise_id, muscle_group_id, role) [pk]
+    (muscle_group_id, role)
+  }
+
+  Note: 'Normalized muscle associations for exercises. This can coexist with raw scraped muscle text during migration.'
+}
+
+Table public.foods {
+  code text [pk, not null, note: 'Open Food Facts product code used for local name search and exact API lookup.']
+  name text [not null, note: 'English product name used by the lightweight fuzzy-search index.']
+
+  Note: 'Lightweight Supabase code/name index only. Full product details remain external and are requested from Open Food Facts by code.'
+}
+
+Table public.body_metrics {
+  id integer [pk]
+  name text [not null, unique]
+  dimension text [not null]
+  category text [not null]
+  updated_at timestamptz [not null, default: `now()`]
+
+  Note: 'Reference catalog of trackable body measurements.'
+}
+
+Table public.muscle_groups {
+  id integer [pk, increment]
+  name text [not null, unique]
+
+  Note: 'Canonical muscle-group reference catalog.'
+}
+
+Table public.nutrients {
+  id integer [pk, increment]
+  key text [not null, unique, note: 'Stable machine-readable identifier such as vitamin_b12. It is not an authentication key.']
+  name text [not null, note: 'Human-readable label such as Vitamin B12.']
+  canonical_unit text [not null, note: 'Unit in which logged amounts are stored, such as g, mg, ug, or kcal.']
+
+  Note: 'Canonical nutrient definitions used to normalize values from external data sources.'
+}
+
+Table public.user_days {
+  id bigint [pk, increment]
+  user_id uuid [not null]
+  log_date date [not null]
+  created_at timestamptz [not null, default: `now()`]
+
+  indexes {
+    (user_id, log_date) [unique]
+    (id, user_id) [unique]
+  }
+
+  Note: 'One row per user and local calendar day. Weekday is derived from log_date rather than stored.'
+}
+
+Table public.day_muscle_targets {
+  day_id bigint [not null]
+  user_id uuid [not null]
+  muscle_group_id integer [not null]
+
+  indexes {
+    (day_id, muscle_group_id) [pk]
+    (user_id, day_id)
+  }
+
+  Note: 'Intended muscle targets for a day. The composite key allows multiple muscle groups on the same day.'
+}
+
+Table public.meals {
+  id bigint [pk, increment]
+  user_id uuid [not null]
+  day_id bigint [not null]
+  kind meal_kind [not null]
+  meal_number integer [not null, default: 0, note: 'Use 0 for breakfast, lunch, and dinner; use 1, 2, 3, and so on for additional meals.']
+  label text [note: 'Optional user-facing label. Additional meal names can otherwise be derived from meal_number.']
+  created_at timestamptz [not null, default: `now()`]
+
+  indexes {
+    (day_id, kind, meal_number) [unique]
+    (id, user_id) [unique]
+  }
+
+  Note: 'Meal container within a logged day. Each exact food is stored separately in meal_items.'
+}
+
+Table public.meal_items {
+  id bigint [pk, increment]
+  user_id uuid [not null]
+  meal_id bigint [not null]
+  food_code text [not null, note: 'References public.foods; the same code is sent to Open Food Facts for current product details.']
+  quantity numeric(14,4) [not null, note: 'Amount entered by the user, interpreted using unit.']
+  unit text [not null, note: 'Entered unit such as g, ml, serving, slice, or item.']
+  consumed_grams numeric(14,4) [note: 'Normalized consumed mass when it can be calculated.']
+  created_at timestamptz [not null, default: `now()`]
+
+  indexes {
+    (id, user_id) [unique]
+    (meal_id)
+    (food_code)
+  }
+
+  Note: 'One consumed food item. Repeated servings may be represented by quantity or separate rows when they need distinct timestamps or notes.'
+}
+
+Table public.meal_nutrients {
+  meal_item_id bigint [not null, note: 'Identifies the exact logged food item whose nutrient value this row describes.']
+  user_id uuid [not null]
+  nutrient_id integer [not null]
+  amount numeric(18,6) [not null, note: 'Actual amount consumed, stored in the nutrient canonical unit; not merely the value per 100 g.']
+  source text [not null, note: 'Data provenance such as open_food_facts, nutrition_label, manual, or calculated. This is not the meal-item ID.']
+  captured_at timestamptz [not null, default: `now()`]
+
+  indexes {
+    (meal_item_id, nutrient_id) [pk]
+    (user_id, nutrient_id)
+  }
+
+  Note: 'Immutable nutrient snapshot for one consumed meal item. Saving a snapshot prevents later external-data changes from rewriting historical intake.'
+}
+
+Table public.workout_sessions {
+  id bigint [pk, increment]
+  user_id uuid [not null]
+  day_id bigint [not null]
+  started_at timestamptz
+  ended_at timestamptz
+
+  indexes {
+    (id, user_id) [unique]
+    (user_id, started_at)
+  }
+
+  Note: 'A user may have multiple workout sessions on the same day.'
+}
+
+Table public.workout_exercises {
+  id bigint [pk, increment]
+  user_id uuid [not null]
+  session_id bigint [not null]
+  exercise_id bigint [not null]
+  position integer [not null, note: 'Exercise order within the workout: 1 for the first exercise, 2 for the second, and so on.']
+  equipment text [not null, note: 'Snapshot of the exercise equipment at logging time. It selects the applicable exercise_metrics capability row.']
+  exercise_rest_seconds numeric(10,3) [note: 'Rest after completing this exercise. Rest between sets belongs on exercise_sets.']
+  notes text [note: 'Optional user-entered comments for this exercise in this workout, such as form cues, discomfort, or next-session plans.']
+
+  indexes {
+    (id, user_id) [unique]
+    (session_id, position) [unique]
+  }
+
+  Note: 'Occurrence of an exercise inside a session. Equipment is copied from the exercise catalog so historical logs remain stable if catalog data later changes.'
+}
+
+Table public.exercise_sets {
+  id bigint [pk, increment]
+  user_id uuid [not null]
+  workout_exercise_id bigint [not null]
+  set_number integer [not null]
+  reps integer
+  weight numeric(12,4) [note: 'Weight in the application canonical weight unit.']
+  concentric_seconds numeric(10,3)
+  eccentric_seconds numeric(10,3)
+  isometric_seconds numeric(10,3)
+  duration_seconds numeric(12,3)
+  rest_after_seconds numeric(10,3) [note: 'Rest after this set, before the next set.']
+  band_color text
+
+  indexes {
+    (workout_exercise_id, set_number) [unique]
+    (user_id, workout_exercise_id)
+  }
+
+  Note: 'One completed set with nullable typed metrics. Applicable columns are determined through workout_exercises.equipment to exercise_metrics. Set count, volume, and one-rep max are normally calculated instead of duplicated.'
+}
+
+Table public.body_measurements {
+  id bigint [pk, increment]
+  user_id uuid [not null]
+  day_id bigint [not null]
+  body_metric_id integer [not null]
+  value numeric(18,6) [not null]
+  unit text [not null]
+  measured_at timestamptz [not null]
+  notes text
+
+  indexes {
+    (user_id, body_metric_id, measured_at)
+  }
+
+  Note: 'One body reading. Multiple readings of the same metric may be recorded on the same day.'
+}
+
+Table public.friendships {
+  user_a_id uuid [not null]
+  user_b_id uuid [not null]
+  requested_by uuid [not null]
+  status_changed_by uuid [note: 'Participant who accepted, declined, blocked, or removed the relationship.']
+  status friendship_status [not null, default: 'pending']
+  requested_at timestamptz [not null, default: `now()`]
+  responded_at timestamptz
+  updated_at timestamptz [not null, default: `now()`]
+
+  indexes {
+    (user_a_id, user_b_id) [pk]
+  }
+
+  Note: 'Tracks both requests and accepted friendships. Store the smaller UUID in user_a_id; requested_by must be one of the two users. This prevents reversed duplicates.'
+}
+
+Table public.leagues {
+  id bigint [pk, increment]
+  owner_id uuid [not null]
+  name varchar(100) [not null]
+  description text
+  starts_at timestamptz [not null]
+  ends_at timestamptz [not null]
+  timezone varchar(50) [not null]
+  status league_status [not null, default: 'draft']
+  scoring_mode league_scoring_mode [not null, default: 'equal']
+  missing_data_policy missing_data_policy [not null, default: 'disqualify']
+  show_raw_values boolean [not null, default: false]
+  created_at timestamptz [not null, default: `now()`]
+  finalized_at timestamptz
+
+  Note: 'Store exact start and end instants. A UI duration in days, weeks, or months is converted into ends_at. Metric configuration should become immutable when the league starts.'
+}
+
+Table public.league_members {
+  league_id bigint [not null]
+  user_id uuid [not null]
+  invited_by uuid [not null]
+  role league_member_role [not null, default: 'member']
+  status league_member_status [not null, default: 'invited']
+  invited_at timestamptz [not null, default: `now()`]
+  responded_at timestamptz
+  joined_at timestamptz
+
+  indexes {
+    (league_id, user_id) [pk]
+    (user_id, status)
+  }
+
+  Note: 'Invitation and membership in one row. A backend function should verify an accepted friendship before inviting a user.'
+}
+
+Table public.league_metrics {
+  id bigint [pk, increment]
+  league_id bigint [not null]
+  metric_type league_metric_type [not null]
+  body_metric_id integer
+  nutrient_id integer
+  exercise_id bigint
+  exercise_measure exercise_measure
+  value_method metric_value_method [not null]
+  direction metric_direction [not null, default: 'higher']
+  weight numeric(10,4) [not null, default: 1, note: 'Relative contribution to the final score. Equal mode treats every metric weight as 1.']
+  target_value numeric(18,6) [note: 'Required when direction is closest_to_target.']
+  minimum_observations integer [not null, default: 1]
+  created_at timestamptz [not null, default: `now()`]
+
+  indexes {
+    (league_id, id) [unique]
+  }
+
+  Note: 'Exactly one source applies by metric_type: body_metric_id, nutrient_id, or exercise_measure with an optional exercise_id. Positive weights are normalized during scoring, so they do not need to total 100.'
+}
+
+Table public.league_metric_results {
+  league_metric_id bigint [not null]
+  league_id bigint [not null]
+  user_id uuid [not null]
+  baseline_value numeric(18,6)
+  result_value numeric(18,6)
+  observations integer [not null, default: 0]
+  normalized_score numeric(10,6)
+  weighted_score numeric(10,6)
+  metric_rank integer
+  finalized_at timestamptz [not null]
+
+  indexes {
+    (league_metric_id, user_id) [pk]
+    (league_id, user_id)
+  }
+
+  Note: 'Frozen per-metric result at league finalization. Normalization makes unlike units comparable before weights are applied.'
+}
+
+Table public.league_results {
+  league_id bigint [not null]
+  user_id uuid [not null]
+  total_score numeric(10,6) [not null]
+  final_rank integer [not null]
+  finalized_at timestamptz [not null]
+
+  indexes {
+    (league_id, user_id) [pk]
+    (league_id, final_rank)
+  }
+
+  Note: 'Frozen final standings. Rank 1 is the winner; equal scores may produce joint winners unless a tie-break rule is added.'
+}
+
+// Authentication and profile
+Ref: auth.users.id - public.users.id
+
+// Exercise catalog and capability relationships
+Ref: public.exercises.equipment > public.exercise_metrics.equipment
+Ref: public.exercise_muscle_groups.exercise_id > public.exercises.id
+Ref: public.exercise_muscle_groups.muscle_group_id > public.muscle_groups.id
+
+// User-day ownership and muscle targets
+Ref: public.user_days.user_id > public.users.id
+Ref: public.day_muscle_targets.(day_id, user_id) > public.user_days.(id, user_id)
+Ref: public.day_muscle_targets.muscle_group_id > public.muscle_groups.id
+
+// Meals and nutrient snapshots
+Ref: public.meals.(day_id, user_id) > public.user_days.(id, user_id)
+Ref: public.meal_items.(meal_id, user_id) > public.meals.(id, user_id)
+Ref: public.meal_items.food_code > public.foods.code
+Ref: public.meal_nutrients.(meal_item_id, user_id) > public.meal_items.(id, user_id)
+Ref: public.meal_nutrients.nutrient_id > public.nutrients.id
+
+// Workout hierarchy. exercise_metrics is reached from each logged exercise through equipment.
+Ref: public.workout_sessions.(day_id, user_id) > public.user_days.(id, user_id)
+Ref: public.workout_exercises.(session_id, user_id) > public.workout_sessions.(id, user_id)
+Ref: public.workout_exercises.exercise_id > public.exercises.id
+Ref: public.workout_exercises.equipment > public.exercise_metrics.equipment
+Ref: public.exercise_sets.(workout_exercise_id, user_id) > public.workout_exercises.(id, user_id)
+
+// Body tracking
+Ref: public.body_measurements.(day_id, user_id) > public.user_days.(id, user_id)
+Ref: public.body_measurements.body_metric_id > public.body_metrics.id
+
+// Friends and leagues
+Ref: public.friendships.user_a_id > public.users.id
+Ref: public.friendships.user_b_id > public.users.id
+Ref: public.friendships.requested_by > public.users.id
+Ref: public.friendships.status_changed_by > public.users.id
+Ref: public.leagues.owner_id > public.users.id
+Ref: public.league_members.league_id > public.leagues.id
+Ref: public.league_members.user_id > public.users.id
+Ref: public.league_members.invited_by > public.users.id
+Ref: public.league_metrics.league_id > public.leagues.id
+Ref: public.league_metrics.body_metric_id > public.body_metrics.id
+Ref: public.league_metrics.nutrient_id > public.nutrients.id
+Ref: public.league_metrics.exercise_id > public.exercises.id
+Ref: public.league_metric_results.(league_id, league_metric_id) > public.league_metrics.(league_id, id)
+Ref: public.league_metric_results.(league_id, user_id) > public.league_members.(league_id, user_id)
+Ref: public.league_results.(league_id, user_id) > public.league_members.(league_id, user_id)

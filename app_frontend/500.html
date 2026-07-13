@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#160f0c">
+  <meta name="robots" content="noindex">
+  <title>Server error | Peak</title>
+  <link rel="icon" href="/app/assets/logo.png" type="image/png">
+  <link rel="stylesheet" href="/app/assets/server-error.css">
+</head>
+<body>
+  <div class="system-field" aria-hidden="true">
+    <span class="system-field__beam"></span>
+    <span class="system-field__grid"></span>
+  </div>
+
+  <header class="server-header">
+    <a class="server-brand" href="/" aria-label="Peak home">
+      <img src="/app/assets/logo.png" alt="" width="48" height="48">
+      <span>Peak</span>
+    </a>
+  </header>
+
+  <main class="server-layout">
+    <section class="server-copy" aria-labelledby="server-title">
+      <p class="server-kicker">Internal server error</p>
+      <h1 id="server-title">System<br><span>recalibrating.</span></h1>
+      <p class="server-message">Peak hit an unexpected service problem. Your account data is still protected, and this request can be retried in a moment.</p>
+      <a class="server-action" href="/">Return to Peak</a>
+    </section>
+
+    <section class="server-visual" aria-hidden="true">
+      <div class="server-code">500</div>
+      <div class="diagnostic-shell">
+        <div class="diagnostic-header">
+          <span></span><span></span><span></span>
+        </div>
+        <svg viewBox="0 0 620 380" role="presentation">
+          <defs>
+            <linearGradient id="fault-line" x1="0" x2="1">
+              <stop offset="0" stop-color="#ff6f5c"/>
+              <stop offset=".48" stop-color="#ffc857"/>
+              <stop offset="1" stop-color="#4ee7b0"/>
+            </linearGradient>
+            <radialGradient id="core-glow" cx="50%" cy="50%" r="60%">
+              <stop offset="0" stop-color="#ffc857" stop-opacity=".95"/>
+              <stop offset=".42" stop-color="#ff6f5c" stop-opacity=".28"/>
+              <stop offset="1" stop-color="#ff6f5c" stop-opacity="0"/>
+            </radialGradient>
+          </defs>
+          <rect class="screen" x="18" y="18" width="584" height="344" rx="28"/>
+          <path class="scanline" d="M58 284h78l28-66 42 108 42-210 39 138h275"/>
+          <circle class="core core--outer" cx="440" cy="147" r="90"/>
+          <circle class="core core--mid" cx="440" cy="147" r="56"/>
+          <circle class="core-core" cx="440" cy="147" r="26"/>
+          <path class="spark spark--one" d="m435 78 25 47-44 11 34 81"/>
+          <path class="spark spark--two" d="M170 88h111M170 127h70M170 166h134"/>
+          <path class="bar bar--one" d="M93 291v-44"/>
+          <path class="bar bar--two" d="M127 291v-74"/>
+          <path class="bar bar--three" d="M161 291v-31"/>
+        </svg>
+        <div class="diagnostic-footer">
+          <span>service fault</span>
+          <strong>retry ready</strong>
+        </div>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#100c29">
+  <title>Profile | Peak</title>
+  <link rel="icon" href="/app/assets/logo.png" type="image/png">
+  <link rel="stylesheet" href="/app/assets/profile.css">
+</head>
+<body>
+  <header class="app-header">
+    <a class="app-brand" href="/app/dashboard" aria-label="Peak dashboard">
+      <img src="/app/assets/logo.png" alt="" width="44" height="44">
+      <span>Peak</span>
+    </a>
+    <a class="back-link" href="/app/dashboard">Back to dashboard</a>
+  </header>
+
+  <main class="profile-page">
+    <header class="page-heading">
+      <p>Account profile</p>
+      <h1>Make Peak yours.</h1>
+      <span>Your preferences shape how workouts, meals, measurements, and recommendations are presented.</span>
+    </header>
+
+    <div class="profile-layout">
+      <aside class="avatar-card">
+        <div class="avatar-frame"><img id="profile-picture" alt="Your profile picture" width="256" height="256"></div>
+        <strong id="avatar-username">Loading</strong>
+        <span id="avatar-display-name"></span>
+        <input id="profile-file" type="file" accept="image/png,image/jpeg,image/webp" hidden>
+        <button class="primary-button" id="profile-upload" type="button">Choose profile picture</button>
+        <button class="secondary-button" id="profile-regenerate" type="button">Generate a new design</button>
+        <p class="avatar-help">PNG, JPEG, or WebP up to 10 MB. Your image is center-cropped and stored as a 256 px PNG.</p>
+        <p class="avatar-status" id="avatar-status" role="status" aria-live="polite"></p>
+      </aside>
+
+      <form class="profile-form" id="profile-form" novalidate>
+        <section class="form-section">
+          <div class="section-heading"><div><p>Identity</p><h2>How you appear</h2></div></div>
+          <div class="field-grid">
+            <label class="field"><span>Username</span><input name="username" type="text" minlength="3" maxlength="30" pattern="[a-z0-9_]{3,30}" autocomplete="username" required><small>Lowercase letters, numbers, and underscores.</small></label>
+            <label class="field"><span>Display name</span><input name="display_name" type="text" maxlength="80" autocomplete="name" placeholder="How should we address you?"></label>
+          </div>
+          <label class="field"><span>Bio</span><textarea name="bio" maxlength="500" rows="4" placeholder="A short note about your training, priorities, or approach."></textarea><small><span id="bio-count">0</span>/500 characters</small></label>
+        </section>
+
+        <section class="form-section">
+          <div class="section-heading"><div><p>Training</p><h2>Experience and goals</h2></div></div>
+          <div class="field-grid">
+            <div class="field"><span id="experience-label">Workout experience</span><div class="custom-select" data-custom-select="workout_experience"><input name="workout_experience" type="hidden" value=""><button class="custom-select__trigger" type="button" aria-haspopup="listbox" aria-expanded="false" aria-labelledby="experience-label experience-value"><span id="experience-value">Not specified</span><i aria-hidden="true"></i></button><div class="custom-select__menu" role="listbox" aria-labelledby="experience-label" hidden><button type="button" role="option" data-value="" aria-selected="true">Not specified</button><button type="button" role="option" data-value="beginner" aria-selected="false">Beginner</button><button type="button" role="option" data-value="intermediate" aria-selected="false">Intermediate</button><button type="button" role="option" data-value="advanced" aria-selected="false">Advanced</button></div></div></div>
+            <div class="field"><span id="units-label">Preferred units</span><div class="custom-select" data-custom-select="preferred_units"><input name="preferred_units" type="hidden" value="metric"><button class="custom-select__trigger" type="button" aria-haspopup="listbox" aria-expanded="false" aria-labelledby="units-label units-value"><span id="units-value">Metric</span><i aria-hidden="true"></i></button><div class="custom-select__menu" role="listbox" aria-labelledby="units-label" hidden><button type="button" role="option" data-value="metric" aria-selected="true">Metric</button><button type="button" role="option" data-value="imperial" aria-selected="false">Imperial</button></div></div></div>
+          </div>
+          <div class="field"><span id="pace-label">Pace avatar</span><div class="custom-select" data-custom-select="pace_gender"><input name="pace_gender" type="hidden" value="female"><button class="custom-select__trigger" type="button" aria-haspopup="listbox" aria-expanded="false" aria-labelledby="pace-label pace-value"><span id="pace-value">Female Pace</span><i aria-hidden="true"></i></button><div class="custom-select__menu" role="listbox" aria-labelledby="pace-label" hidden><button type="button" role="option" data-value="female" aria-selected="true">Female Pace</button><button type="button" role="option" data-value="male" aria-selected="false">Male Pace</button></div></div><small>Changes the Pace mascot shown throughout the app.</small></div>
+          <label class="field"><span>Goals</span><input name="goals" type="text" maxlength="1200" placeholder="Build strength, improve mobility, run 5 km"><small>Separate multiple entries with commas.</small></label>
+        </section>
+
+        <section class="form-section">
+          <div class="section-heading"><div><p>Food</p><h2>Nutrition preferences</h2></div></div>
+          <label class="field"><span>Cuisine preferences</span><input name="cuisine_preferences" type="text" maxlength="1200" placeholder="Indian, Japanese, Mediterranean"><small>Separate multiple entries with commas.</small></label>
+          <label class="field"><span>Dietary preferences</span><input name="dietary_preferences" type="text" maxlength="1200" placeholder="Vegetarian, dairy-free, high-protein"><small>Separate multiple entries with commas.</small></label>
+        </section>
+
+        <section class="form-section form-section--compact">
+          <dl class="profile-dates"><div><dt>Created</dt><dd id="profile-created">—</dd></div><div><dt>Last updated</dt><dd id="profile-updated">—</dd></div></dl>
+        </section>
+
+        <div class="form-actions">
+          <p id="form-status" role="status" aria-live="polite"></p>
+          <button class="save-button" type="submit"><span>Save profile</span><i aria-hidden="true"></i></button>
+        </div>
+      </form>
+    </div>
+  </main>
+  <script type="module" src="/app/assets/profile.js"></script>
+</body>
+</html>

@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Peak AI chat test</title>
+  <style>
+    :root { color-scheme: dark; --bg:#0b0d0e; --panel:#111416; --line:#293034; --text:#e5ece8; --muted:#8d9a94; --green:#73e2a7; --amber:#f0c674; --red:#ef6f6c; }
+    * { box-sizing:border-box; }
+    body { margin:0; min-height:100vh; background:var(--bg); color:var(--text); font:14px/1.5 ui-monospace,SFMono-Regular,Consolas,monospace; }
+    button,textarea { font:inherit; }
+    button { color:var(--text); background:#171c1e; border:1px solid var(--line); border-radius:5px; cursor:pointer; }
+    button:hover { border-color:var(--green); }
+    button:disabled { opacity:.5; cursor:wait; }
+    a { color:var(--green); }
+    .window { width:min(1500px,calc(100% - 28px)); height:calc(100vh - 28px); margin:14px auto; border:1px solid var(--line); border-radius:9px; background:var(--panel); overflow:hidden; box-shadow:0 20px 70px #0008; }
+    .titlebar { height:43px; display:flex; align-items:center; gap:8px; padding:0 14px; border-bottom:1px solid var(--line); background:#15191b; }
+    .dot { width:11px; height:11px; border-radius:50%; } .red{background:#ff605c}.yellow{background:#ffbd44}.green{background:#00ca4e}
+    .title { margin-left:8px; color:var(--muted); }
+    .layout { display:grid; grid-template-columns:280px 1fr; height:calc(100% - 43px); }
+    .sidebar { min-width:0; border-right:1px solid var(--line); display:flex; flex-direction:column; background:#0e1112; }
+    .sidebar-head { padding:14px; border-bottom:1px solid var(--line); }
+    .new-chat { width:100%; padding:9px; color:var(--green); }
+    .retention { margin:10px 0 0; color:var(--amber); font-size:11px; line-height:1.45; }
+    .sessions { overflow:auto; padding:8px; }
+    .session { width:100%; padding:10px; margin-bottom:6px; text-align:left; display:block; }
+    .session.active { border-color:var(--green); background:#16211b; }
+    .session-title { display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .session-time { display:block; margin-top:3px; color:var(--muted); font-size:11px; }
+    .main { min-width:0; display:grid; grid-template-rows:auto 1fr auto; }
+    .toolbar { min-height:48px; padding:10px 16px; border-bottom:1px solid var(--line); display:flex; align-items:center; justify-content:space-between; gap:12px; }
+    #status { color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    #status.error { color:var(--red); }
+    .messages { overflow:auto; padding:22px clamp(14px,4vw,60px); }
+    .empty { color:var(--muted); text-align:center; margin-top:18vh; }
+    .message { max-width:1050px; margin:0 auto 20px; }
+    .message-label { margin-bottom:5px; color:var(--muted); font-size:11px; text-transform:uppercase; letter-spacing:.08em; }
+    .bubble { padding:14px 16px; border:1px solid var(--line); border-radius:7px; white-space:pre-wrap; overflow-wrap:anywhere; }
+    .user .bubble { margin-left:clamp(20px,10vw,140px); background:#151b18; border-color:#294536; }
+    .assistant .bubble { margin-right:clamp(0px,5vw,70px); background:#111719; }
+    .model-section { margin-top:12px; }
+    .model-section h3 { margin:0 0 8px; color:var(--green); font-size:14px; }
+    .model-line { margin:7px 0; color:#c9d2ce; }
+    .cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(270px,1fr)); gap:12px; max-width:1050px; margin:12px auto 0; }
+    .card { min-width:0; padding:15px; border:1px solid var(--line); border-radius:7px; background:#0d1011; }
+    .card h4 { margin:0 0 4px; color:var(--green); font-size:15px; }
+    .meta { color:var(--muted); margin-bottom:10px; }
+    .fields,.nutrients { display:grid; grid-template-columns:minmax(100px,.8fr) minmax(120px,1.2fr); gap:4px 12px; margin:0; }
+    .fields dt,.nutrients dt { color:var(--muted); overflow-wrap:anywhere; }
+    .fields dd,.nutrients dd { margin:0; overflow-wrap:anywhere; }
+    .nutrients { max-height:260px; overflow:auto; padding-top:8px; border-top:1px solid var(--line); }
+    .ingredients { margin:12px 0 0; color:#c2cbc7; }
+    .card-error { color:var(--amber); }
+    .composer { border-top:1px solid var(--line); padding:13px 16px; background:#0e1112; }
+    .composer form { max-width:1100px; margin:auto; display:grid; grid-template-columns:1fr auto; gap:10px; }
+    textarea { resize:none; min-height:48px; max-height:140px; padding:12px; color:var(--text); background:#090b0c; border:1px solid var(--line); border-radius:5px; outline:none; }
+    textarea:focus { border-color:var(--green); }
+    .send { min-width:90px; padding:0 16px; color:var(--green); }
+    .hint { max-width:1100px; margin:6px auto 0; color:var(--muted); font-size:11px; }
+    @media (max-width:760px) { .window{width:100%;height:100vh;margin:0;border-radius:0}.layout{grid-template-columns:1fr}.sidebar{display:none}.messages{padding:16px 10px}.user .bubble,.assistant .bubble{margin-left:0;margin-right:0}.composer form{grid-template-columns:1fr}.send{height:42px} }
+  </style>
+</head>
+<body>
+  <main class="window">
+    <header class="titlebar"><span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span><span class="title">peak — authenticated structured AI chat</span></header>
+    <section class="layout">
+      <aside class="sidebar">
+        <div class="sidebar-head"><button class="new-chat" id="new-chat" type="button">+ new session</button><p class="retention">Free-tier chat history is stored by Google, not Supabase, and is permanently deleted after 1 day.</p></div>
+        <nav class="sessions" id="sessions" aria-label="AI sessions"></nav>
+      </aside>
+      <section class="main">
+        <header class="toolbar"><span id="status">checking authentication…</span><a href="/api/ai/schema" target="_blank" rel="noreferrer">schema</a></header>
+        <section class="messages" id="messages"><p class="empty">Sign in, then start a structured fitness conversation.<br><br>Chat history expires permanently after 1 day on the Gemini free tier.</p></section>
+        <footer class="composer">
+          <form id="chat-form"><textarea id="prompt" maxlength="6000" placeholder="Ask for a workout, meal plan, or both…" disabled></textarea><button class="send" id="send" disabled>send</button></form>
+          <p class="retention" id="retention-notice">Important: this chat is stored temporarily by Google and will be permanently deleted after 1 day. Messages are not stored in Supabase.</p>
+          <p class="hint">Enter sends · Shift+Enter adds a line · food lookups may take several seconds to respect API limits</p>
+        </footer>
+      </section>
+    </section>
+  </main>
+  <script type="module" src="/ai-chat-test.js"></script>
+</body>
+</html>

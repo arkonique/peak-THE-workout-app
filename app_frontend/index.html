@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Sign in to Peak to plan, measure, and understand your health and training.">
+  <meta name="theme-color" content="#171238">
+  <title>Sign in | Peak</title>
+  <link rel="icon" href="/app/assets/logo.png" type="image/png">
+  <link rel="stylesheet" href="/app/assets/auth.css">
+</head>
+<body>
+  <div class="aurora" aria-hidden="true">
+    <span class="aurora__orb aurora__orb--one"></span>
+    <span class="aurora__orb aurora__orb--two"></span>
+    <span class="aurora__orb aurora__orb--three"></span>
+    <span class="aurora__grain"></span>
+  </div>
+
+  <main class="auth-layout">
+    <section class="brand-panel" aria-labelledby="brand-heading">
+      <a class="brand" href="/app" aria-label="Peak home">
+        <span class="brand__mark"><img src="/app/assets/logo.png" alt="" width="88" height="88"></span>
+        <span class="brand__name">Peak</span>
+      </a>
+
+      <div class="brand-copy">
+        <p class="eyebrow">Your health, brought into focus</p>
+        <h1 id="brand-heading">
+          <span class="headline-line">Reach your</span>
+          <span class="headline-line">peak.</span>
+          <span class="headline-line headline-line--gradient">Measure the</span>
+          <span class="headline-line headline-line--gradient">climb.</span>
+        </h1>
+        <p class="brand-copy__body">Training, nutrition, body metrics, and progress in one precise workspace built around you.</p>
+      </div>
+
+      <div class="signal" aria-hidden="true">
+        <span></span><span></span><span></span><span></span><span></span><span></span>
+      </div>
+
+      <p class="brand-footnote">Structured tracking. Clear decisions. Durable progress.</p>
+    </section>
+
+    <section class="auth-panel" aria-label="Account access">
+      <div class="auth-card">
+        <div class="auth-card__inner">
+          <header class="auth-header">
+            <p class="auth-header__kicker">Peak account</p>
+            <h2 id="form-title">Welcome back</h2>
+            <p id="form-description">Sign in to continue building your record.</p>
+          </header>
+
+          <div class="tabs" role="tablist" aria-label="Account action">
+            <button class="tab is-active" id="login-tab" type="button" role="tab" aria-selected="true" aria-controls="login-form" data-view="login">Sign in</button>
+            <button class="tab" id="signup-tab" type="button" role="tab" aria-selected="false" aria-controls="signup-form" data-view="signup">Create account</button>
+            <span class="tabs__indicator" aria-hidden="true"></span>
+          </div>
+
+          <div class="feedback" id="feedback" role="status" aria-live="polite" hidden>
+            <span class="feedback__marker" aria-hidden="true"></span>
+            <p id="feedback-message"></p>
+          </div>
+
+          <form class="auth-form" id="login-form" aria-labelledby="login-tab" novalidate>
+            <div class="field">
+              <label for="login-identifier">Username or email</label>
+              <input id="login-identifier" name="identifier" type="text" maxlength="320" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="you@example.com" required>
+            </div>
+            <div class="field">
+              <div class="field__label-row"><label for="login-password">Password</label></div>
+              <div class="password-field">
+                <input id="login-password" name="password" type="password" minlength="15" maxlength="128" autocomplete="current-password" placeholder="Enter your password" required>
+                <button class="password-toggle" type="button" data-password-toggle="login-password" aria-label="Show password" aria-pressed="false">Show</button>
+              </div>
+            </div>
+            <button class="submit-button" type="submit">
+              <span class="submit-button__label">Sign in</span>
+              <span class="submit-button__loader" aria-hidden="true"></span>
+            </button>
+            <div class="auth-divider" aria-hidden="true"><span>or</span></div>
+            <button class="passkey-button" id="passkey-login" type="button">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a7 7 0 0 0-7 7v2m14 0V9a7 7 0 0 0-7-7M8 9a4 4 0 0 1 8 0v2.5M8 13v1a4 4 0 0 1-2 3.46M12 8a1 1 0 0 1 1 1v5.5A7.5 7.5 0 0 1 10.5 20M16 14v1a10 10 0 0 1-1.3 4.94"/></svg>
+              <span class="passkey-button__label">Sign in with a passkey</span>
+              <span class="passkey-button__loader" aria-hidden="true"></span>
+            </button>
+          </form>
+
+          <form class="auth-form" id="signup-form" aria-labelledby="signup-tab" novalidate hidden>
+            <div class="field-row">
+              <div class="field">
+                <label for="signup-username">Username</label>
+                <input id="signup-username" name="username" type="text" minlength="3" maxlength="30" pattern="[a-z0-9_]{3,30}" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="your_name" required>
+              </div>
+              <div class="field">
+                <label for="signup-email">Email</label>
+                <input id="signup-email" name="email" type="email" maxlength="320" autocomplete="email" autocapitalize="none" spellcheck="false" placeholder="you@example.com" required>
+              </div>
+            </div>
+            <div class="field">
+              <label for="signup-password">Password</label>
+              <div class="password-field">
+                <input id="signup-password" name="password" type="password" minlength="15" maxlength="128" autocomplete="new-password" placeholder="At least 15 characters" aria-describedby="password-guidance" required>
+                <button class="password-toggle" type="button" data-password-toggle="signup-password" aria-label="Show password" aria-pressed="false">Show</button>
+              </div>
+              <div class="strength" id="password-strength" role="meter" aria-label="Password strength" aria-valuemin="0" aria-valuemax="4" aria-valuenow="0">
+                <div class="strength__track" aria-hidden="true"><span class="strength__fill"></span></div>
+                <div class="strength__copy"><span id="strength-label">Password strength</span><span id="strength-detail">Not entered</span></div>
+              </div>
+              <p class="field__hint" id="password-guidance">Use a unique passphrase of at least 15 characters. Length matters more than forced symbol rules.</p>
+            </div>
+            <div class="field">
+              <label for="signup-password-confirm">Confirm password</label>
+              <div class="password-field">
+                <input id="signup-password-confirm" name="password-confirm" type="password" minlength="15" maxlength="128" autocomplete="new-password" placeholder="Repeat your password" required>
+                <button class="password-toggle" type="button" data-password-toggle="signup-password-confirm" aria-label="Show password" aria-pressed="false">Show</button>
+              </div>
+            </div>
+            <button class="submit-button" type="submit">
+              <span class="submit-button__label">Create account</span>
+              <span class="submit-button__loader" aria-hidden="true"></span>
+            </button>
+          </form>
+
+          <section class="passkey-setup" id="passkey-setup" aria-labelledby="passkey-setup-title" hidden>
+            <div class="passkey-setup__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 0-7 7v2m14 0V9a7 7 0 0 0-7-7M8 9a4 4 0 0 1 8 0v2.5M8 13v1a4 4 0 0 1-2 3.46M12 8a1 1 0 0 1 1 1v5.5A7.5 7.5 0 0 1 10.5 20M16 14v1a10 10 0 0 1-1.3 4.94"/></svg>
+            </div>
+            <h3 id="passkey-setup-title">Set up a passkey</h3>
+            <p>Use your device unlock next time. Your password will still work.</p>
+            <div class="passkey-setup__actions">
+              <button class="submit-button" id="register-passkey" type="button">
+                <span class="submit-button__label">Set up passkey</span>
+                <span class="submit-button__loader" aria-hidden="true"></span>
+              </button>
+              <button class="skip-button" id="skip-passkey-setup" type="button">Skip for now</button>
+            </div>
+          </section>
+
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script type="module" src="/app/assets/auth.js"></script>
+</body>
+</html>

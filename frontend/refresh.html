@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Exercise List Refresh</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+      background: #0d1117;
+      color: #c9d1d9;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      background: radial-gradient(circle at top, #161b22 0, #0d1117 56%);
+    }
+
+    .window {
+      width: min(860px, 100%);
+      overflow: hidden;
+      border: 1px solid #30363d;
+      border-radius: 10px;
+      background: #010409;
+      box-shadow: 0 24px 70px #0009;
+    }
+
+    .titlebar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      height: 42px;
+      padding: 0 14px;
+      border-bottom: 1px solid #30363d;
+      background: #161b22;
+    }
+
+    .dot { width: 11px; height: 11px; border-radius: 50%; }
+    .red { background: #ff5f56; }
+    .yellow { background: #ffbd2e; }
+    .green { background: #27c93f; }
+
+    .title {
+      margin-left: 8px;
+      color: #8b949e;
+      font-size: 12px;
+    }
+
+    .terminal { padding: 22px; }
+
+    .command { margin: 0 0 20px; color: #f0f6fc; }
+    .prompt { color: #3fb950; }
+
+    .progress-track {
+      height: 6px;
+      margin-bottom: 16px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: #21262d;
+    }
+
+    .progress-bar {
+      width: 0;
+      height: 100%;
+      border-radius: inherit;
+      background: #3fb950;
+      transition: width 300ms ease;
+    }
+
+    .status {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      margin-bottom: 18px;
+      color: #8b949e;
+      font-size: 13px;
+    }
+
+    .status strong { color: #c9d1d9; font-weight: 500; }
+
+    .log {
+      height: min(46vh, 360px);
+      margin: 0;
+      overflow: auto;
+      white-space: pre-wrap;
+      color: #8b949e;
+      font: inherit;
+      font-size: 13px;
+      line-height: 1.7;
+      scrollbar-color: #30363d transparent;
+    }
+
+    .success { color: #3fb950; }
+    .error { color: #f85149; }
+
+    @media (max-width: 560px) {
+      body { padding: 12px; }
+      .terminal { padding: 16px; }
+      .status { flex-direction: column; gap: 6px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="window" aria-live="polite">
+    <div class="titlebar">
+      <span class="dot red"></span>
+      <span class="dot yellow"></span>
+      <span class="dot green"></span>
+      <span class="title">peak — exercise refresh</span>
+    </div>
+    <section class="terminal">
+      <p class="command"><span class="prompt">peak $</span> refresh exercises</p>
+      <div class="progress-track"><div class="progress-bar" id="progress"></div></div>
+      <div class="status">
+        <span>Status: <strong id="status">connecting</strong></span>
+        <span id="count">0%</span>
+      </div>
+      <pre class="log" id="log">Connecting to refresh job…</pre>
+    </section>
+  </main>
+
+  <script>
+    const statusElement = document.querySelector("#status");
+    const countElement = document.querySelector("#count");
+    const progressElement = document.querySelector("#progress");
+    const logElement = document.querySelector("#log");
+
+    function render(state) {
+      const progress = Number(state.progress || 0);
+      statusElement.textContent = state.phase;
+      statusElement.className = state.status === "complete" ? "success" : state.status === "error" ? "error" : "";
+      progressElement.style.width = `${progress}%`;
+      progressElement.style.background = state.status === "error" ? "#f85149" : "#3fb950";
+      countElement.textContent = state.total
+        ? `${state.current}/${state.total} · ${progress}%`
+        : `${progress}%`;
+
+      const lines = (state.log || []).map(entry => {
+        const time = new Date(entry.time).toLocaleTimeString();
+        return `[${time}] ${entry.message}`;
+      });
+      logElement.textContent = lines.join("\n") || state.message;
+      logElement.scrollTop = logElement.scrollHeight;
+    }
+
+    async function poll() {
+      try {
+        const response = await fetch("/api/exercises/refresh", { cache: "no-store" });
+        if (!response.ok) throw new Error(`status request returned ${response.status}`);
+        const payload = await response.json();
+        render(payload.data);
+        if (payload.data.status === "running") setTimeout(poll, 650);
+      } catch (error) {
+        statusElement.textContent = "disconnected";
+        statusElement.className = "error";
+        logElement.textContent += `\n[error] ${error.message}`;
+        setTimeout(poll, 1500);
+      }
+    }
+
+    poll();
+  </script>
+</body>
+</html>

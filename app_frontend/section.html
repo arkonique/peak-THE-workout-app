@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#100c29">
+  <title>Peak</title>
+  <link rel="icon" href="/app/assets/logo.png" type="image/png">
+  <link rel="stylesheet" href="/app/assets/dashboard.css">
+</head>
+<body>
+  <header class="dashboard-header">
+    <a class="dashboard-brand" href="/app/dashboard" aria-label="Peak dashboard">
+      <img src="/app/assets/logo.png" alt="" width="44" height="44">
+      <span>Peak</span>
+    </a>
+    <div class="dashboard-date-control">
+      <button class="date-step-button" id="date-prev" type="button" aria-label="Previous day">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 6-6 6 6 6"/></svg>
+      </button>
+      <button class="dashboard-date" id="dashboard-date-time" type="button" aria-haspopup="dialog" aria-expanded="false">
+        <span id="dashboard-weekday">Today</span>
+        <span id="dashboard-date">Loading date</span>
+      </button>
+      <button class="date-step-button" id="date-next" type="button" aria-label="Next day">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>
+      </button>
+    </div>
+    <div class="dashboard-actions">
+      <a class="profile-button is-loading" id="profile-button" href="/app/profile" aria-label="Open profile">
+        <span class="profile-button__picture"><img id="profile-picture" alt="" width="40" height="40"></span>
+        <span class="profile-button__username" id="profile-username">Loading</span>
+      </a>
+      <a class="logout-button" id="logout-button" href="/logout" aria-label="Log out">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 6H6.5A2.5 2.5 0 0 0 4 8.5v7A2.5 2.5 0 0 0 6.5 18H10"/><path d="M14 8l4 4-4 4"/><path d="M18 12H9"/></svg>
+      </a>
+    </div>
+  </header>
+  <main class="dashboard section-page" aria-label="App section">
+    <section class="section-card">
+      <p id="section-kicker">Peak</p>
+      <h1 id="section-title">Loading</h1>
+      <span id="section-description">This placeholder confirms that the tab route is wired correctly.</span>
+    </section>
+  </main>
+  <nav class="bottom-nav" id="app-bottom-nav" aria-label="Primary app sections"></nav>
+  <script type="module" src="/app/assets/dashboard.js"></script>
+</body>
+</html>

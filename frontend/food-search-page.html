@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Food Name Search</title>
+  <style>
+    :root { color-scheme: dark; font-family: Consolas, monospace; background: #0d1117; color: #c9d1d9; }
+    * { box-sizing: border-box; }
+    body { min-height: 100vh; margin: 0; display: grid; place-items: center; padding: 20px; background: radial-gradient(circle at top, #161b22, #0d1117 58%); }
+    .window { width: min(1050px, 100%); min-height: 620px; overflow: hidden; border: 1px solid #30363d; border-radius: 10px; background: #010409; box-shadow: 0 24px 70px #0009; }
+    .titlebar { display: flex; align-items: center; gap: 8px; height: 42px; padding: 0 14px; border-bottom: 1px solid #30363d; background: #161b22; }
+    .dot { width: 11px; height: 11px; border-radius: 50%; } .red { background:#ff5f56; } .yellow { background:#ffbd2e; } .green { background:#27c93f; }
+    .title { margin-left: 8px; color: #8b949e; font-size: 12px; }
+    .terminal { padding: 20px; }
+    .notice { color: #8b949e; font-size: 12px; line-height: 1.5; }
+    .line { display: flex; align-items: center; gap: 10px; margin: 18px 0; }
+    .prompt { color: #3fb950; }
+    input { flex: 1; border: 0; border-bottom: 1px solid #30363d; padding: 9px 4px; color: #f0f6fc; background: transparent; outline: none; font: inherit; }
+    pre { min-height: 430px; overflow: auto; padding: 16px; border: 1px solid #21262d; border-radius: 7px; color: #8b949e; white-space: pre-wrap; font: 13px/1.6 Consolas, monospace; }
+    .error { color: #f85149; }
+  </style>
+</head>
+<body>
+  <main class="window">
+    <div class="titlebar"><span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span><span class="title">peak — public.foods fuzzy index</span></div>
+    <section class="terminal">
+      <p class="notice">Supabase searches the lightweight code/name index. After a 700 ms pause, the top code is sent to Open Food Facts for current details.</p>
+      <div class="line"><span class="prompt">peak $</span><input id="query" autocomplete="off" placeholder="Search food names…" autofocus><span id="status">idle</span></div>
+      <pre id="output">Type at least two characters.</pre>
+    </section>
+  </main>
+  <script>
+    const input = document.querySelector("#query");
+    const output = document.querySelector("#output");
+    const status = document.querySelector("#status");
+    let timer;
+    let controller;
+
+    async function run(query) {
+      controller?.abort();
+      controller = new AbortController();
+      status.textContent = "searching";
+      try {
+        const namesResponse = await fetch(`/api/food-names?${new URLSearchParams({ q: query })}`, { signal: controller.signal, cache: "no-store" });
+        const namesPayload = await namesResponse.json();
+        if (!namesResponse.ok) throw new Error(namesPayload.error || `Search returned ${namesResponse.status}.`);
+        const matches = namesPayload.data.results || [];
+        const lines = [`> food-names ${JSON.stringify(query)}`, "", `matches (${matches.length}/5):`];
+        matches.forEach((match, index) => lines.push(`  ${index + 1}. ${match.name} [${match.code}]`));
+        if (!matches.length) lines.push("  no matches");
+        if (matches[0]) {
+          const productResponse = await fetch(`/api/food-product?${new URLSearchParams({ code: matches[0].code })}`, { signal: controller.signal, cache: "no-store" });
+          const productPayload = await productResponse.json();
+          if (!productResponse.ok) throw new Error(productPayload.error || `Product lookup returned ${productResponse.status}.`);
+          lines.push("", "top product:", JSON.stringify(productPayload.data.product, null, 2));
+        }
+        output.className = "";
+        output.textContent = lines.join("\n");
+        status.textContent = "complete";
+      } catch (error) {
+        if (error.name === "AbortError") return;
+        output.className = "error";
+        output.textContent = `[error] ${error.message}`;
+        status.textContent = "error";
+      }
+    }
+
+    input.addEventListener("input", () => {
+      clearTimeout(timer);
+      const query = input.value.trim();
+      if (query.length < 2) {
+        controller?.abort();
+        output.textContent = "Type at least two characters.";
+        status.textContent = "idle";
+        return;
+      }
+      status.textContent = "waiting";
+      timer = setTimeout(() => run(query), 700);
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Exercise Table</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+      background: #0d1117;
+      color: #c9d1d9;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      display: grid;
+      place-items: center;
+      padding: 12px;
+      background: radial-gradient(circle at top, #161b22 0, #0d1117 58%);
+    }
+
+    .window {
+      width: calc(100vw - 24px);
+      height: calc(100vh - 24px);
+      min-height: 520px;
+      overflow: hidden;
+      border: 1px solid #30363d;
+      border-radius: 10px;
+      background: #010409;
+      box-shadow: 0 24px 70px #0009;
+    }
+
+    .titlebar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      height: 42px;
+      padding: 0 14px;
+      border-bottom: 1px solid #30363d;
+      background: #161b22;
+    }
+
+    .dot { width: 11px; height: 11px; flex: 0 0 auto; border-radius: 50%; }
+    .red { background: #ff5f56; }
+    .yellow { background: #ffbd2e; }
+    .green { background: #27c93f; }
+
+    .title {
+      margin-left: 8px;
+      color: #8b949e;
+      font-size: 12px;
+    }
+
+    .terminal {
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+      height: calc(100% - 42px);
+      padding: 18px;
+    }
+
+    .toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      min-width: 0;
+      margin-bottom: 16px;
+    }
+
+    .command { margin: 0; overflow: hidden; color: #f0f6fc; text-overflow: ellipsis; white-space: nowrap; }
+    .prompt { color: #3fb950; }
+
+    .meta {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      color: #8b949e;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    button {
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      padding: 6px 10px;
+      font: inherit;
+      font-size: 12px;
+      color: #c9d1d9;
+      background: #161b22;
+      cursor: pointer;
+    }
+
+    button:hover { border-color: #8b949e; }
+    button:disabled { opacity: .55; cursor: wait; }
+
+    .table-shell {
+      min-height: 0;
+      overflow: auto;
+      border: 1px solid #21262d;
+      border-radius: 7px;
+      scrollbar-color: #30363d transparent;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    col.id { width: 3%; }
+    col.name { width: 12%; }
+    col.url { width: 17%; }
+    col.force { width: 6%; }
+    col.category { width: 8%; }
+    col.mechanic { width: 7%; }
+    col.equipment { width: 8%; }
+    col.difficulty { width: 7%; }
+    col.primary { width: 9%; }
+    col.secondary { width: 6%; }
+    col.variations { width: 7%; }
+    col.scraped { width: 10%; }
+
+    th {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      padding: 10px 12px;
+      border-right: 1px solid #30363d;
+      border-bottom: 1px solid #30363d;
+      color: #8b949e;
+      background: #161b22;
+      font-weight: 500;
+      text-align: left;
+    }
+
+    td {
+      padding: 9px 12px;
+      border-right: 1px solid #21262d;
+      border-bottom: 1px solid #21262d;
+      vertical-align: top;
+      overflow-wrap: anywhere;
+    }
+
+    th:last-child, td:last-child { border-right: 0; }
+    tbody tr:hover { background: #0d1117; }
+
+    a { color: #58a6ff; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .empty, .error { padding: 34px 12px; text-align: center; }
+    .empty { color: #8b949e; }
+    .error { color: #f85149; }
+
+    @media (max-width: 800px) {
+      body { padding: 6px; }
+      .window { width: calc(100vw - 12px); height: calc(100vh - 12px); }
+      .terminal { padding: 10px; }
+      .toolbar { align-items: flex-start; flex-direction: column; gap: 10px; }
+      table { font-size: 10px; }
+      th, td { padding: 7px 6px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="window">
+    <div class="titlebar">
+      <span class="dot red"></span>
+      <span class="dot yellow"></span>
+      <span class="dot green"></span>
+      <span class="title">peak — public.exercises</span>
+    </div>
+    <section class="terminal">
+      <div class="toolbar">
+        <p class="command"><span class="prompt">peak $</span> select * from exercises order by id;</p>
+        <div class="meta" aria-live="polite">
+          <span id="status">Loading…</span>
+          <button id="reload" type="button">Reload</button>
+        </div>
+      </div>
+      <div class="table-shell">
+        <table>
+          <colgroup>
+            <col class="id">
+            <col class="name">
+            <col class="url">
+            <col class="force">
+            <col class="category">
+            <col class="mechanic">
+            <col class="equipment">
+            <col class="difficulty">
+            <col class="primary">
+            <col class="secondary">
+            <col class="variations">
+            <col class="scraped">
+          </colgroup>
+          <thead>
+            <tr>
+              <th scope="col">id</th>
+              <th scope="col">name</th>
+              <th scope="col">url</th>
+              <th scope="col">force</th>
+              <th scope="col">category</th>
+              <th scope="col">mechanic</th>
+              <th scope="col">equipment</th>
+              <th scope="col">difficulty</th>
+              <th scope="col">primary_muscle</th>
+              <th scope="col">secondary_muscles</th>
+              <th scope="col">variations_available</th>
+              <th scope="col">scraped_at</th>
+            </tr>
+          </thead>
+          <tbody id="rows">
+            <tr><td class="empty" colspan="12">Loading table…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const rowsElement = document.querySelector("#rows");
+    const statusElement = document.querySelector("#status");
+    const reloadButton = document.querySelector("#reload");
+    const columns = [
+      "id",
+      "name",
+      "url",
+      "force",
+      "category",
+      "mechanic",
+      "equipment",
+      "difficulty",
+      "primary_muscle",
+      "secondary_muscles",
+      "variations_available",
+      "scraped_at"
+    ];
+
+    function displayValue(column, value) {
+      if (value === null || value === undefined) return "—";
+      if (column === "scraped_at") {
+        const date = new Date(value);
+        return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleString();
+      }
+      return String(value);
+    }
+
+    function render(rows) {
+      rowsElement.replaceChildren();
+      if (!rows.length) {
+        const row = document.createElement("tr");
+        const cell = document.createElement("td");
+        cell.className = "empty";
+        cell.colSpan = columns.length;
+        cell.textContent = "The exercises table is empty.";
+        row.append(cell);
+        rowsElement.append(row);
+        return;
+      }
+
+      const fragment = document.createDocumentFragment();
+      for (const exercise of rows) {
+        const row = document.createElement("tr");
+        for (const column of columns) {
+          const cell = document.createElement("td");
+          const text = displayValue(column, exercise[column]);
+          if (column === "url" && /^https?:\/\//i.test(text)) {
+            const link = document.createElement("a");
+            link.href = text;
+            link.target = "_blank";
+            link.rel = "noreferrer";
+            link.textContent = text;
+            cell.append(link);
+          } else {
+            cell.textContent = text;
+          }
+          row.append(cell);
+        }
+        fragment.append(row);
+      }
+      rowsElement.append(fragment);
+    }
+
+    async function loadRows() {
+      reloadButton.disabled = true;
+      statusElement.textContent = "Loading…";
+      try {
+        const response = await fetch("/api/exercises/table", { cache: "no-store" });
+        const payload = await response.json();
+        if (!response.ok) throw new Error(payload.error || `request returned ${response.status}`);
+        render(payload.data);
+        statusElement.textContent = `${payload.data.length.toLocaleString()} rows`;
+      } catch (error) {
+        rowsElement.replaceChildren();
+        const row = document.createElement("tr");
+        const cell = document.createElement("td");
+        cell.className = "error";
+        cell.colSpan = columns.length;
+        cell.textContent = `Unable to load exercises: ${error.message}`;
+        row.append(cell);
+        rowsElement.append(row);
+        statusElement.textContent = "Error";
+      } finally {
+        reloadButton.disabled = false;
+      }
+    }
+
+    reloadButton.addEventListener("click", loadRows);
+    loadRows();
+  </script>
+</body>
+</html>

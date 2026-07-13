@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'unsafe-inline'; connect-src 'self' https://*.supabase.co; img-src 'none'; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'">
+  <title>Authentication Test</title>
+  <style>
+    :root { color-scheme: dark; font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace; background: #0d1117; color: #c9d1d9; }
+    * { box-sizing: border-box; }
+    body { min-height: 100vh; margin: 0; padding: 20px; display: grid; place-items: center; background: radial-gradient(circle at top, #161b22, #0d1117 58%); }
+    .window { width: min(1180px, 100%); min-height: min(780px, calc(100vh - 40px)); overflow: hidden; border: 1px solid #30363d; border-radius: 10px; background: #010409; box-shadow: 0 24px 70px #0009; }
+    .titlebar { height: 42px; display: flex; align-items: center; gap: 8px; padding: 0 14px; border-bottom: 1px solid #30363d; background: #161b22; }
+    .dot { width: 11px; height: 11px; border-radius: 50%; } .red { background: #ff5f56; } .yellow { background: #ffbd2e; } .green { background: #27c93f; }
+    .title { margin-left: 8px; color: #8b949e; font-size: 12px; }
+    .terminal { display: grid; gap: 18px; padding: 20px; }
+    .notice { margin: 0; color: #8b949e; font-size: 12px; line-height: 1.6; }
+    .forms { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+    form, .actions { display: grid; gap: 12px; padding: 16px; border: 1px solid #21262d; border-radius: 8px; }
+    h2 { margin: 0 0 4px; color: #f0f6fc; font-size: 14px; font-weight: 500; }
+    label { display: grid; gap: 6px; color: #8b949e; font-size: 11px; }
+    .toggle { display: flex; align-items: center; gap: 7px; }
+    input, button { width: 100%; min-width: 0; border: 1px solid #30363d; border-radius: 6px; padding: 9px 10px; color: #f0f6fc; background: #0d1117; font: inherit; outline: none; }
+    input:focus, button:focus { border-color: #3fb950; box-shadow: 0 0 0 2px #23863633; }
+    input[type="checkbox"] { width: auto; margin: 0; }
+    button { cursor: pointer; } button:hover { border-color: #8b949e; }
+    .primary { border-color: #238636; background: #23863644; }
+    .actions { grid-template-columns: repeat(4, 1fr); }
+    .output-wrap { position: relative; }
+    #status { position: absolute; top: 12px; right: 14px; color: #8b949e; font-size: 11px; }
+    .output { min-height: 180px; max-height: 320px; margin: 0; overflow: auto; padding: 16px; border: 1px solid #21262d; border-radius: 7px; color: #8b949e; white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; font-size: 13px; line-height: 1.6; }
+    .output.error { color: #f85149; }
+    a { color: #58a6ff; }
+    @media (max-width: 760px) { body { padding: 8px; } .forms { grid-template-columns: 1fr; } .actions { grid-template-columns: 1fr 1fr; } .terminal { padding: 13px; } }
+  </style>
+</head>
+<body>
+  <main class="window">
+    <div class="titlebar"><span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span><span class="title">peak — Supabase Auth test console</span></div>
+    <section class="terminal">
+      <p class="notice">Apply <a href="/api/users/schema" target="_blank" rel="noreferrer">/api/users/schema</a> in the Supabase SQL Editor first. Passwords go only to Supabase Auth; <code>public.users</code> stores the UUID-linked username. Passkeys are experimental and must be enabled under Authentication → Passkeys.</p>
+      <div class="forms">
+        <form id="signup-form">
+          <h2>Create account</h2>
+          <label>EMAIL <input id="signup-email" type="email" autocomplete="email" maxlength="320" required></label>
+          <label>USERNAME <input id="signup-username" autocomplete="username" minlength="3" maxlength="30" pattern="[a-zA-Z0-9_]+" required></label>
+          <label>PASSWORD <input id="signup-password" type="password" autocomplete="new-password" minlength="15" maxlength="128" required></label>
+          <label>CONFIRM PASSWORD <input id="signup-password-confirm" type="password" autocomplete="new-password" minlength="15" maxlength="128" required></label>
+          <label class="toggle"><input type="checkbox" data-password-toggle="#signup-password"> Show password</label>
+          <button class="primary" type="submit">Sign up</button>
+        </form>
+        <form id="login-form">
+          <h2>Verify login</h2>
+          <label>USERNAME OR EMAIL <input id="login-identifier" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="320" required></label>
+          <label>PASSWORD <input id="login-password" type="password" autocomplete="current-password" minlength="15" maxlength="128" required></label>
+          <label class="toggle"><input type="checkbox" data-password-toggle="#login-password"> Show password</label>
+          <button class="primary" type="submit">Log in</button>
+        </form>
+      </div>
+      <div class="actions">
+        <button id="register-passkey" type="button">Register passkey</button>
+        <button id="passkey-login" type="button">Log in with passkey</button>
+        <button id="session" type="button">Check session</button>
+        <button id="logout" type="button">Log out</button>
+      </div>
+      <div class="output-wrap"><span id="status">idle</span><pre class="output" id="output">Ready. Create the users schema, then sign up with a confirmed email, unique username, and a 15+ character passphrase.</pre></div>
+    </section>
+  </main>
+  <script type="module" src="/auth-test.js"></script>
+</body>
+</html>

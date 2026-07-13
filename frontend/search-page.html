@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Fuzzy Search Test</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+      background: #0d1117;
+      color: #c9d1d9;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      display: grid;
+      place-items: center;
+      padding: 20px;
+      background: radial-gradient(circle at top, #161b22 0, #0d1117 58%);
+    }
+
+    .window {
+      width: min(1100px, 100%);
+      height: min(760px, calc(100vh - 40px));
+      min-height: 520px;
+      overflow: hidden;
+      border: 1px solid #30363d;
+      border-radius: 10px;
+      background: #010409;
+      box-shadow: 0 24px 70px #0009;
+    }
+
+    .titlebar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      height: 42px;
+      padding: 0 14px;
+      border-bottom: 1px solid #30363d;
+      background: #161b22;
+    }
+
+    .dot { width: 11px; height: 11px; border-radius: 50%; }
+    .red { background: #ff5f56; }
+    .yellow { background: #ffbd2e; }
+    .green { background: #27c93f; }
+    .title { margin-left: 8px; color: #8b949e; font-size: 12px; }
+
+    .terminal {
+      display: grid;
+      grid-template-rows: auto auto minmax(0, 1fr);
+      height: calc(100% - 42px);
+      padding: 20px;
+      gap: 14px;
+    }
+
+    .settings {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr auto;
+      gap: 12px;
+      align-items: end;
+    }
+
+    label { display: grid; gap: 6px; color: #8b949e; font-size: 11px; }
+
+    input, select, button {
+      min-width: 0;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      padding: 9px 10px;
+      color: #f0f6fc;
+      background: #0d1117;
+      font: inherit;
+      font-size: 13px;
+      outline: none;
+    }
+
+    input:focus, select:focus { border-color: #3fb950; box-shadow: 0 0 0 2px #23863633; }
+    button { cursor: pointer; }
+    button:hover { border-color: #8b949e; }
+
+    .query-line {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .prompt { flex: 0 0 auto; color: #3fb950; }
+    #query { width: 100%; border: 0; border-bottom: 1px solid #30363d; border-radius: 0; background: transparent; }
+    #status { flex: 0 0 auto; color: #8b949e; font-size: 11px; }
+
+    .output {
+      min-height: 0;
+      margin: 0;
+      overflow: auto;
+      padding: 16px;
+      border: 1px solid #21262d;
+      border-radius: 7px;
+      color: #8b949e;
+      background: #010409;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      font: inherit;
+      font-size: 13px;
+      line-height: 1.65;
+      scrollbar-color: #30363d transparent;
+    }
+
+    @media (max-width: 680px) {
+      body { padding: 8px; }
+      .window { height: calc(100vh - 16px); }
+      .terminal { padding: 13px; }
+      .settings { grid-template-columns: 1fr 1fr; }
+      .settings button { grid-column: 1 / -1; }
+    }
+  </style>
+</head>
+<body>
+  <main class="window">
+    <div class="titlebar">
+      <span class="dot red"></span>
+      <span class="dot yellow"></span>
+      <span class="dot green"></span>
+      <span class="title">peak — fuzzy table search</span>
+    </div>
+    <section class="terminal">
+      <div class="settings">
+        <label>TABLE <input id="table" value="exercises" spellcheck="false"></label>
+        <label>SEARCH FIELD <input id="field" value="name" spellcheck="false"></label>
+        <label>SEARCH MODE
+          <select id="mode">
+            <option value="as-you-type">As you type</option>
+            <option value="after-pause">Wait, then search</option>
+          </select>
+        </label>
+        <button id="apply" type="button">Apply source</button>
+      </div>
+      <div class="query-line">
+        <span class="prompt">peak $</span>
+        <input id="query" autocomplete="off" placeholder="Start typing an exercise name…" autofocus>
+        <span id="status">idle</span>
+      </div>
+      <pre class="output" id="output">Type at least one character. The five closest names appear as you type; pause for 700ms to expand the top row.</pre>
+    </section>
+  </main>
+
+  <script type="module">
+    import { createTableFuzzySearch } from "/table-search.js";
+
+    const tableInput = document.querySelector("#table");
+    const fieldInput = document.querySelector("#field");
+    const queryInput = document.querySelector("#query");
+    const modeInput = document.querySelector("#mode");
+    const applyButton = document.querySelector("#apply");
+    const outputElement = document.querySelector("#output");
+    const statusElement = document.querySelector("#status");
+    let names = [];
+    let expandedRow = null;
+    let activeQuery = "";
+    let searchController;
+
+    function emptyMessage() {
+      return modeInput.value === "as-you-type"
+        ? "Type at least one character. The five closest names appear as you type; pause for 700ms to expand the top row."
+        : "Type at least one character. Search starts after a 700ms pause, then expands the top row.";
+    }
+
+    function render() {
+      if (!activeQuery) {
+        outputElement.textContent = emptyMessage();
+        return;
+      }
+
+      const lines = [
+        `> search ${tableInput.value}.${fieldInput.value} ${JSON.stringify(activeQuery)}`,
+        "",
+        `matches (${names.length}/5):`
+      ];
+      if (names.length) {
+        names.forEach((name, index) => lines.push(`  ${index + 1}. ${name}`));
+      } else {
+        lines.push("  no matches");
+      }
+      if (expandedRow) {
+        lines.push("", "top match (expanded after pause):", JSON.stringify(expandedRow, null, 2));
+      }
+      outputElement.textContent = lines.join("\n");
+    }
+
+    function configureSearch() {
+      searchController?.destroy();
+      names = [];
+      expandedRow = null;
+      activeQuery = queryInput.value.trim();
+      try {
+        searchController = createTableFuzzySearch({
+          input: queryInput,
+          table: tableInput.value.trim(),
+          field: fieldInput.value.trim(),
+          searchMode: modeInput.value,
+          pauseMs: 700,
+          onNames(results, context) {
+            activeQuery = context.query;
+            names = results.slice(0, 5);
+            render();
+          },
+          onRow(row, context) {
+            activeQuery = context.query;
+            expandedRow = row;
+            render();
+          },
+          onClear() {
+            activeQuery = "";
+            names = [];
+            expandedRow = null;
+            render();
+          },
+          onStatus(state) {
+            statusElement.textContent = state.phase;
+            if (state.phase === "typing") {
+              activeQuery = state.query;
+              names = [];
+              expandedRow = null;
+              render();
+            }
+          },
+          onError(error) {
+            outputElement.textContent = `[error] ${error.message}`;
+          }
+        });
+        if (activeQuery) searchController.search(activeQuery);
+        queryInput.focus();
+      } catch (error) {
+        statusElement.textContent = "error";
+        outputElement.textContent = `[configuration error] ${error.message}`;
+      }
+    }
+
+    applyButton.addEventListener("click", configureSearch);
+    modeInput.addEventListener("change", () => searchController?.setMode(modeInput.value));
+    configureSearch();
+  </script>
+</body>
+</html>

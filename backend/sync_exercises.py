@@ -10,6 +10,7 @@ from __future__ import annotations
 import json
 import csv
 import os
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from html.parser import HTMLParser
@@ -27,11 +28,17 @@ if str(SCRIPT_DIR) not in sys.path:
 
 from fetch import get_page_content
 
+try:
+    from .schema import INTEGER_PROFILE_FIELDS, PROFILE_FIELDS
+except ImportError:
+    from schema import INTEGER_PROFILE_FIELDS, PROFILE_FIELDS
+
 
 BASE_URL = "https://plainexercise.com"
 LISTING_URL_TEMPLATE = "https://plainexercise.com/exercises/?page={page}/"
 NO_RESULTS_SENTINEL = "No exercises match the current filters."
 DEFAULT_API_BASE_URL = os.environ.get("GYM_TRACKER_API_URL", "http://127.0.0.1:8000/api").rstrip("/")
+ProgressCallback = Callable[[str, int, int | None, str], None]
 
 
 @dataclass
@@ -174,7 +181,7 @@ class ExerciseProfileParser(HTMLParser):
                     self.fields[field_name] = self._current_row_value_text
 
 
-def collect_exercise_links() -> list[dict[str, str]]:
+def collect_exercise_links(progress_callback: ProgressCallback | None = None) -> list[dict[str, str]]:
     all_items: list[ExerciseLink] = []
     seen_urls: set[str] = set()
 
@@ -208,6 +215,14 @@ def collect_exercise_links() -> list[dict[str, str]]:
                 seen_urls.add(item.url)
                 all_items.append(item)
 
+            if progress_callback:
+                progress_callback(
+                    "discovering",
+                    page,
+                    None,
+                    f"Scanned listing page {page}; found {len(all_items)} exercises so far.",
+                )
+
             page += 1
     finally:
         progress.close()
@@ -231,14 +246,51 @@ def enrich_exercise_record(record: dict[str, str]) -> dict[str, str]:
     return enriched
 
 
-def collect_exercise_details() -> list[dict[str, str]]:
-    records = collect_exercise_links()
-    enriched_items: list[dict[str, str]] = []
+def collect_exercise_details(
+    progress_callback: ProgressCallback | None = None,
+    existing_items: list[dict[str, str]] | None = None,
+) -> list[dict[str, str]]:
+    records = collect_exercise_links(progress_callback)
+    existing_by_url = {
+        item["url"]: item
+        for item in (existing_items or [])
+        if isinstance(item.get("url"), str)
+    }
+    new_records = [record for record in records if record["url"] not in existing_by_url]
+    items_by_url = dict(existing_by_url)
 
-    for record in tqdm(records, desc="Fetching exercise details", unit="exercise", dynamic_ncols=True):
-        enriched_items.append(enrich_exercise_record(record))
+    if progress_callback:
+        skipped = len(records) - len(new_records)
+        progress_callback(
+            "filtering",
+            skipped,
+            len(records),
+            f"Skipped {skipped} existing exercises; {len(new_records)} new exercises need details.",
+        )
 
-    return enriched_items
+    for index, record in enumerate(
+        tqdm(new_records, desc="Fetching new exercise details", unit="exercise", dynamic_ncols=True),
+        start=1,
+    ):
+        items_by_url[record["url"]] = enrich_exercise_record(record)
+        if progress_callback:
+            progress_callback(
+                "fetching",
+                index,
+                len(new_records),
+                f"Fetched {record['name']} ({index}/{len(new_records)} new).",
+            )
+
+    if progress_callback and not new_records:
+        progress_callback("fetching", 0, 0, "No new exercise detail pages to fetch.")
+
+    complete_items = []
+    for record in records:
+        item = dict(items_by_url[record["url"]])
+        item["name"] = record["name"]
+        item["url"] = record["url"]
+        complete_items.append(item)
+    return complete_items
 
 
 def export_items(items: list[dict[str, str]], output_path: str | Path) -> Path:
@@ -257,36 +309,65 @@ def export_items(items: list[dict[str, str]], output_path: str | Path) -> Path:
     return path
 
 
-def run(output_path: str | Path | None = None) -> str:
+def run(
+    output_path: str | Path | None = None,
+    progress_callback: ProgressCallback | None = None,
+    existing_items: list[dict[str, str]] | None = None,
+) -> str:
     """Return the complete exercise list with profile fields as JSON.
 
     If output_path is provided, the result is also saved locally. Use a .csv
     suffix to save CSV; any other suffix saves JSON.
     """
 
-    items = collect_exercise_details()
+    items = collect_exercise_details(progress_callback, existing_items)
     output = json.dumps(items, ensure_ascii=False, indent=2)
 
     if output_path is not None:
+        if progress_callback:
+            progress_callback("saving", len(items), len(items), f"Saving {len(items)} exercises.")
         export_items(items, output_path)
 
     return output
 
 
-def collect_exercise_records() -> list[dict[str, object]]:
-    items = collect_exercise_details()
+def exercise_items_to_records(items: list[dict[str, str]]) -> list[dict[str, object]]:
+    scraped_at = datetime.now(UTC).isoformat()
     records = []
     for exercise in items:
-        profile_data = {key: value for key, value in exercise.items() if key not in {"name", "url"}}
-        records.append(
-            {
-                "name": exercise["name"],
-                "url": exercise["url"],
-                "profile_data": profile_data,
-                "scraped_at": datetime.now(UTC).isoformat(),
-            }
-        )
+        record: dict[str, object] = {
+            "name": exercise["name"],
+            "url": exercise["url"],
+            "scraped_at": scraped_at,
+        }
+        for field in PROFILE_FIELDS:
+            value = exercise.get(field)
+            if field in INTEGER_PROFILE_FIELDS:
+                record[field] = int(value) if value not in {None, "", "—"} else None
+            else:
+                record[field] = value
+        records.append(record)
     return records
+
+
+def exercise_records_to_items(records: list[dict[str, object]]) -> list[dict[str, str]]:
+    items = []
+    for record in records:
+        name = record.get("name")
+        url = record.get("url")
+        if not isinstance(name, str) or not isinstance(url, str):
+            continue
+        item = {"name": name, "url": url}
+        for field in PROFILE_FIELDS:
+            value = record.get(field)
+            if value is not None:
+                item[field] = str(value)
+        items.append(item)
+    return items
+
+
+def collect_exercise_records() -> list[dict[str, object]]:
+    return exercise_items_to_records(collect_exercise_details())
 
 
 def sync_exercises() -> int:

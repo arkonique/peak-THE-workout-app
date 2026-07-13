@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#100c29">
+  <meta name="robots" content="noindex">
+  <title>Page not found | Peak</title>
+  <link rel="icon" href="/app/assets/logo.png" type="image/png">
+  <link rel="stylesheet" href="/app/assets/error.css">
+</head>
+<body>
+  <div class="error-aurora" aria-hidden="true"><span></span><span></span></div>
+  <header class="error-header">
+    <a class="error-brand" href="/" aria-label="Peak home">
+      <img src="/app/assets/logo.png" alt="" width="48" height="48">
+      <span>Peak</span>
+    </a>
+  </header>
+  <main class="error-layout">
+    <section class="error-copy" aria-labelledby="error-title">
+      <p class="error-kicker">Route not found</p>
+      <h1 id="error-title">You took a<br><span>wrong turn.</span></h1>
+      <p class="error-message">This page is outside the mapped route. Your progress is still exactly where you left it.</p>
+      <a class="error-action" href="/">Return to Peak</a>
+    </section>
+    <div class="error-visual" aria-hidden="true">
+      <div class="error-code">404</div>
+      <svg viewBox="0 0 620 300" role="presentation">
+        <defs>
+          <linearGradient id="route-gradient" x1="0" x2="1">
+            <stop offset="0" stop-color="#fa2a97"/>
+            <stop offset=".45" stop-color="#ff9900"/>
+            <stop offset=".72" stop-color="#61e37a"/>
+            <stop offset="1" stop-color="#7779ff"/>
+          </linearGradient>
+          <linearGradient id="mountain-gradient" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#7779ff" stop-opacity=".38"/>
+            <stop offset="1" stop-color="#251d58" stop-opacity=".04"/>
+          </linearGradient>
+        </defs>
+        <path class="mountain" d="M15 276 128 172l62 55 108-156 62 89 79-126 166 242Z"/>
+        <path class="route" d="M21 250c74-29 91-98 153-70 49 23 42 76 92 55 67-28 55-139 128-133 63 5 48 83 103 58 39-18 52-57 102-88"/>
+        <circle class="route-point route-point--start" cx="21" cy="250" r="7"/>
+        <circle class="route-point route-point--lost" cx="394" cy="102" r="10"/>
+      </svg>
+    </div>
+  </main>
+</body>
+</html>

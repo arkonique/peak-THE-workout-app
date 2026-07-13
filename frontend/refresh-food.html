@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Refresh Food Index</title>
+  <style>
+    :root { color-scheme: dark; font-family: Consolas, monospace; background:#0d1117; color:#c9d1d9; }
+    * { box-sizing:border-box; }
+    body { min-height:100vh; margin:0; display:grid; place-items:center; padding:20px; background:radial-gradient(circle at top,#161b22,#0d1117 58%); }
+    .window { width:min(850px,100%); border:1px solid #30363d; border-radius:10px; background:#010409; overflow:hidden; box-shadow:0 24px 70px #0009; }
+    .bar { height:42px; padding:13px 16px; border-bottom:1px solid #30363d; background:#161b22; color:#8b949e; font-size:12px; }
+    main { padding:22px; }
+    .prompt { color:#3fb950; }
+    .note { color:#8b949e; font-size:12px; line-height:1.6; }
+    input,button { font:inherit; }
+    input { width:100%; margin:12px 0; padding:12px; border:1px solid #30363d; border-radius:6px; color:#f0f6fc; background:#0d1117; }
+    button { padding:10px 14px; border:1px solid #238636; border-radius:6px; color:white; background:#238636; cursor:pointer; }
+    pre { min-height:220px; padding:14px; border:1px solid #21262d; border-radius:7px; color:#8b949e; white-space:pre-wrap; }
+  </style>
+</head>
+<body>
+  <section class="window">
+    <div class="bar">peak — refresh lightweight public.foods index</div>
+    <main>
+      <p><span class="prompt">peak $</span> extract code + English name</p>
+      <p class="note">Only the code and English name are uploaded to Supabase. Full product data remains external and is requested from Open Food Facts by code. The faster local command is:<br><code>python server.py --refresh-foods "C:\path\food.parquet"</code></p>
+      <input id="file" type="file" accept=".parquet,application/vnd.apache.parquet">
+      <button id="upload">UPLOAD AND EXTRACT</button>
+      <pre id="output">idle</pre>
+    </main>
+  </section>
+  <script>
+    const fileInput = document.querySelector("#file");
+    const button = document.querySelector("#upload");
+    const output = document.querySelector("#output");
+    let poll;
+    function monitor() {
+      clearInterval(poll);
+      poll = setInterval(async () => {
+        const response = await fetch("/api/foods/refresh", { cache:"no-store" });
+        const payload = await response.json();
+        const state = payload.data || payload;
+        output.textContent = JSON.stringify(state, null, 2);
+        if (["complete","error"].includes(state.status)) clearInterval(poll);
+      }, 750);
+    }
+    button.addEventListener("click", () => {
+      const file = fileInput.files[0];
+      if (!file) { output.textContent = "[error] Select a source file."; return; }
+      button.disabled = true;
+      const xhr = new XMLHttpRequest();
+      xhr.open("POST", "/api/foods/refresh");
+      xhr.setRequestHeader("Content-Type", "application/octet-stream");
+      xhr.upload.onprogress = event => { if (event.lengthComputable) output.textContent = `uploading ${Math.round(event.loaded/event.total*100)}%`; };
+      xhr.onload = () => { button.disabled=false; output.textContent=xhr.responseText; if (xhr.status < 300) monitor(); };
+      xhr.onerror = () => { button.disabled=false; output.textContent="[error] Upload failed."; };
+      xhr.send(file);
+    });
+  </script>
+</body>
+</html>

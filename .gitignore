@@ -1,0 +1,100 @@
+# Local secrets and environment files
+.env
+.env.*
+!.env.example
+.envrc
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+*.csr
+
+# Python bytecode, virtualenvs, and tooling caches
+__pycache__/
+*.py[cod]
+*$py.class
+.python-version
+.venv/
+venv/
+env/
+ENV/
+__pypackages__/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.pyre/
+.pytype/
+.hypothesis/
+.tox/
+.nox/
+.coverage
+.coverage.*
+coverage/
+htmlcov/
+build/
+dist/
+*.egg-info/
+pip-wheel-metadata/
+
+# JavaScript dependencies, package-manager stores, and logs
+node_modules/
+.npm/
+.pnpm-store/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Local databases, dumps, and generated data
+.uploads/
+.duckdb_tmp/
+*.duckdb
+*.duckdb.wal
+*.sqlite
+*.sqlite3
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+*.parquet
+*.parquet.tmp
+openfoodfacts-mongodbdump.gz
+frontend/exercises.json
+
+# Supabase/local service runtime artifacts. Keep migrations and schema files.
+supabase/.temp/
+supabase/.branches/
+.supabase/
+
+# Local profile/avatar artifacts. Production profile pictures live in Supabase Storage.
+profile_pictures/
+
+# Runtime logs, process files, and temporary files
+*.log
+*.pid
+*.seed
+*.tmp
+*.temp
+*.bak
+*.old
+*.orig
+.cache/
+tmp/
+temp/
+
+# Local design/debug screenshots and one-off scratch files
+problems_markup.png
+/????????-????-????-????-????????????
+
+# Office lock files
+~$*
+
+# Editor, OS, and assistant-local metadata
+.idea/
+.vscode/
+.agents/
+.codex/
+.DS_Store
+Thumbs.db
+Desktop.ini
